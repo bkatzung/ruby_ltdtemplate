@@ -6,18 +6,23 @@
 # @license MIT License
 
 require 'ltdtemplate/code'
+require 'sarah'
 
 class LtdTemplate::Value::Array < LtdTemplate::Code
 
-    attr_reader :named, :positional
-
     def initialize (template)
 	super template
-	@positional = []# positional values (val1, ..., valN)
-	@named = {}	# named values (.. key1, kval1, ..., keyN, kvalN)
+	@sarah = Sarah.new
 	@scalar = false
 	@template.use :arrays
     end
+
+    #
+    # Access positional (sequential) or named (random-access)
+    # parts of the array
+    #
+    def positional; @sarah.seq; end
+    def named; @sarah.rnd; end
 
     #
     # Implement the subscripting interface. Note that the most recent
@@ -28,44 +33,27 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     # Keys must be Ruby-native values; values must be template code
     # or values.
     #
-    def has_item? (key)
-	@named.has_key? key or
-	  (key.is_a?(Integer) and key >= 0 and key < @positional.size)
-    end
+    def has_item? (key); @sarah.has_key? key; end
     def get_item (key)
-	return @named[key] if @named.has_key? key
-	return @positional[key] if key.is_a? Integer and
-	  key >= 0 and key < @positional.size
-	@template.factory :nil
+	@sarah.has_key?(key) ? @sarah[key] : @template.factory(:nil)
     end
     def set_item (key, value)
-	if key.is_a? Integer and key >= 0 and key <= @positional.size
-	    @positional[key] = value
-	    @named.delete key
-	    psize = @positional.size
-	    while @named.has_key? psize
-		@positional[psize] = @named.delete psize
-		psize += 1
-	    end
-	else
-	    @named[key] = value
-	end
-	@template.using :array_size, @positional.size + @named.size
+	@sarah[key] = value
+	@template.using :array_size, @sarah.size
     end
 
     def to_boolean; true; end
-    def to_native; @positional.map { |val| val.to_native }; end
-    def to_text; @positional.map { |val| val.to_text }.join ''; end
+    def to_native; @sarah.seq.map { |val| val.to_native }; end
+    def to_text; @sarah.seq.map { |val| val.to_text }.join ''; end
 
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call' then self
 	when 'add' then do_add opts
 	when 'join' then do_join opts
-	when 'num_pos' then @template.factory :number, @positional.size
-	when 'num_opts' then @template.factory :number, @named.size
-	when 'size' then @template.factory :nunber,
-	  (@positional.size + @named.size)
+	when 'seq_size' then @template.factory :number, @sarah.seq_size
+	when 'rnd_size' then @template.factory :number, @sarah.rnd_size
+	when 'size' then @template.factory :nunber, @sarah.size
 	when 'type' then @template.factory :string, 'array'
 	else @template.factory :nil
 	end
@@ -76,15 +64,14 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     # parameter list contains exactly one positional parameter and
     # the ".." operator was not used.
     #
-    def scalar?; @scalar and @positional.size == 1; end
+    def scalar?; @scalar and @sarah.seq_size == 1; end
 
     #
     # Clear all current positional and named values
     #
     def clear
+	@sarah.clear
 	@scalar = false
-	@positional.clear
-	@named.clear
 	self
     end
 
@@ -94,10 +81,8 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     #
     def set_value (positional, named = {}, scalar = false)
 	clear
+	@sarah.merge! positional, named
 	@scalar = scalar
-	@positional.concat positional
-	named.each { |key, val| set_item key, val }
-	@scalar = true if scalar
 	self
     end
 

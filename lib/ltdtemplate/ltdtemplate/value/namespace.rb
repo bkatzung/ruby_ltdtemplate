@@ -25,10 +25,10 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
     #
     def clear
 	super
-	@named['_'] = @parameters
-	@named['@'] = @root
-	@named['^'] = @parent if @parent
-	@named['$'] = self
+	@sarah.rnd['_'] = @parameters
+	@sarah.rnd['@'] = @root
+	@sarah.rnd['^'] = @parent if @parent
+	@sarah.rnd['$'] = self
 	self
     end
 
