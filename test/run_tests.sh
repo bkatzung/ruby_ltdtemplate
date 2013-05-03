@@ -1,10 +1,12 @@
 #!/bin/sh
 
 # Do we have a local development copy of the sarah gem?
-SARAH=../../sarah/lib/sarah
+SARAH=../../sarah/lib
 if [ -d "$SARAH" ]
 then
-    export RUBYLIB="$SARAH"
+    export RUBYLIB="../lib:$SARAH"
+else
+    export RUBYLIB=../lib
 fi
 
 # Run the requested tests (or all of them)

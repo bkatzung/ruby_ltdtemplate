@@ -6,8 +6,7 @@
 # @license MIT License
 
 require 'ltdtemplate/code'
-require 'rubygems'
-gem 'sarah'
+require 'sarah'
 
 class LtdTemplate::Value::Array < LtdTemplate::Code
 

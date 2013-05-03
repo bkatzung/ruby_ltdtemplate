@@ -1,5 +1,3 @@
-$LOAD_PATH << '../lib/ltdtemplate'
-
 require 'minitest/autorun'
 require 'ltdtemplate'
 
