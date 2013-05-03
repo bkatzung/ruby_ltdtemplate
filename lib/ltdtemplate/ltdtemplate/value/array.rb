@@ -6,9 +6,12 @@
 # @license MIT License
 
 require 'ltdtemplate/code'
-require 'sarah'
+require 'rubygems'
+gem 'sarah'
 
 class LtdTemplate::Value::Array < LtdTemplate::Code
+
+    attr_reader :sarah
 
     def initialize (template)
 	super template
@@ -49,12 +52,15 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call' then self
-	when 'add' then do_add opts
 	when 'join' then do_join opts
-	when 'seq_size' then @template.factory :number, @sarah.seq_size
+	when 'pop', '->' then do_pop opts
+	when 'push', '+>' then do_push opts
 	when 'rnd_size' then @template.factory :number, @sarah.rnd_size
-	when 'size' then @template.factory :nunber, @sarah.size
+	when 'seq_size' then @template.factory :number, @sarah.seq_size
+	when 'shift', '<-' then do_shift opts
+	when 'size' then @template.factory :number, @sarah.size
 	when 'type' then @template.factory :string, 'array'
+	when 'unshift', '<+' then do_unshift opts
 	else @template.factory :nil
 	end
     end
@@ -105,21 +111,6 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     end
 
     #
-    # Add new items with nil or specific values
-    #
-    def do_add (opts)
-	params = opts[:parameters]
-	if params.positional.size
-	    tnil = @template.factory :nil
-	    params.positional.each { |item| set_item(item.to_native, tnil) }
-	end
-	if params.named.size
-	    params.named.each { |item, val| set_item(item, val) }
-	end
-	@template.factory :nil
-    end
-
-    #
     # Combine array element values into a string
     #
     def do_join (opts)
@@ -134,7 +125,7 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
 	    end
 	end
 
-	text = @positional.map { |val| val.get_value.to_text }
+	text = @sarah.seq.map { |val| val.get_value.to_text }
 	@template.factory :string, case text.size
 	when 0 then ''
 	when 1 then text[0]
@@ -142,6 +133,24 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
 	else "#{text[0]}#{first}" + text[1..-2].join(middle) +
 	  "#{last}#{text[-1]}"
 	end
+    end
+
+    def do_pop (opts)
+	@sarah.pop || @template.factory(:nil)
+    end
+
+    def do_push (opts)
+	if params = opts[:parameters] then @sarah.append! params.sarah end
+	@template.factory :nil
+    end
+
+    def do_shift (opts)
+	@sarah.shift || @template.factory(:nil)
+    end
+
+    def do_unshift (opts)
+	if params = opts[:parameters] then @sarah.insert! params.sarah end
+	@template.factory :nil
     end
 
     protected

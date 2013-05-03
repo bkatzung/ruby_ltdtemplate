@@ -53,15 +53,31 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 
     def get_value (opts = {})
 	case opts[:method]
-	when 'method' then method_string
-	when 'target' then @target || @template.factory(:nil)
-	when 'true' then @template.factory :boolean, true
 	when 'false' then @template.factory :boolean, false
-	when 'nil' then @template.factory :nil
 	when 'if' then do_if opts
 	when 'loop' then do_loop opts
+	when 'method' then method_string
+	when 'nil' then @template.factory :nil
+	when 'target' then @target || @template.factory(:nil)
+	when 'true' then @template.factory :boolean, true
+	when 'use' then do_use opts
+	when 'var' then do_add_names opts
 	else super
 	end
+    end
+
+    # Add new namespace names with nil or specific values
+    #
+    def do_add_names (opts)
+	params = opts[:parameters]
+	if params.positional.size
+	    tnil = @template.factory :nil
+	    params.positional.each { |item| set_item(item.to_native, tnil) }
+	end
+	if params.named.size
+	    params.named.each { |item, val| set_item(item, val) }
+	end
+	@template.factory :nil
     end
 
     # Implement conditionals
@@ -100,6 +116,22 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 	when 1 then results[0]
 	else @template.factory(:array).set_from_array(results)
 	end
+    end
+
+    def do_use (opts)
+	tpl = @template
+	if loader = tpl.options[:loader] and
+	  params = opts[:parameters] and params.positional.size > 0
+	    name = params.positional[0].get_value.to_text
+	    if !tpl.used[name]
+		tpl.use :use
+		tpl.used[name] = true
+		result = loader.call(tpl, name)
+		tpl.parse_template(tpl.get_tokens result).get_value if
+		  result.kind_of? String
+	    end
+	end
+	tpl.factory :nil
     end
 
 end

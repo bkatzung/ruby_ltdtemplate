@@ -26,6 +26,12 @@ class LtdTemplate
     # LtdTemplate::ResourceLimitExceeded exception was raised.
     attr_reader :exceeded
 
+    # @!attribute [r] factory_singletons
+    # @return [Hash]
+    # A hash of factory singletons (e.g. nil, true, and false values)
+    # for this template.
+    attr_reader :factory_singletons
+
     # @!attribute [r] limits
     # @return [Hash]
     # A hash of resource limits to enforce during parsing and rendering.
@@ -36,17 +42,21 @@ class LtdTemplate
     # The current namespace (at the bottom of the rendering namespace stack).
     attr_reader :namespace
 
+    # @!attribute [r] options
+    # @return [Hash]
+    # Instance initialization options
+    attr_reader :options
+
     # @!attribute [r] usage
     # @return [Hash]
     # A hash of resource usage. It is updated after calls to #parse and
     # #render.
     attr_reader :usage
 
-    # @!attribute [r] factory_singletons
+    # @!attribute [r] used
     # @return [Hash]
-    # A hash of factory singletons (e.g. nil, true, and false values)
-    # for this template.
-    attr_reader :factory_singletons
+    # A hash of used resources for this template
+    attr_reader :used
 
     # @@classes contains the default factory classes. These can be overridden
     # globally using the #set_classes class method or per-template using the
@@ -83,13 +93,15 @@ class LtdTemplate
 	@@classes.merge! classes
     end
 
-    def initialize
+    def initialize (options = {})
 	@classes = @@classes
 	@code = nil
 	@factory_singletons = {}
 	@limits = {}
 	@namespace = nil
+	@options = options
 	@usage = {}
+	@used = {}
     end
 
     # Parse a template from a string.
@@ -162,9 +174,10 @@ class LtdTemplate
     # @param options [Hash] Rendering options.
     # @return [String] The result of rendering the template.
     def render (options = {})
+	@exceeded = nil		# No limit exceeded yet
 	@namespace = nil	# Reset the namespace stack between runs
 	@usage = {}		# Reset resource usage
-	@exceeded = nil		# No limit exceeded yet
+	@used = {}		# No libraries used yet
 
 	#
 	# Accept template parameters from an array or hash.

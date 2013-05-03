@@ -8,7 +8,7 @@ require 'ltdtemplate/code'
 
 class LtdTemplate::Value::Number < LtdTemplate::Code
 
-    def initialize (template, value)
+    def initialize (template, value = 0)
 	super template
 	case value
 	when Numeric then @value = value
