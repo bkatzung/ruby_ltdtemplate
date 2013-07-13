@@ -53,6 +53,9 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 
     def get_value (opts = {})
 	case opts[:method]
+	when 'array', '*' # anonymous array
+	    opts[:parameters] ? opts[:parameters] :
+	      @template.factory(:parameters)
 	when 'false' then @template.factory :boolean, false
 	when 'if' then do_if opts
 	when 'loop' then do_loop opts
@@ -100,22 +103,17 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
     end
 
     def do_loop (opts)
-	results = []
+	results = @template.factory(:array)
 	if params = opts[:parameters] and params.positional.size > 1
 	    params = params.positional
 	    while params[0].get_value(:method => 'call').to_boolean
 		@template.use :iterations
-		results << params[1].get_value(:method => 'call')
-		break if params[2] and !params[2].get_value(:method => 'call').
-		  to_boolean
+		results.sarah.push params[1].get_value(:method => 'call')
+		break if params[2] and
+		  !params[2].get_value(:method => 'call').to_boolean
 	    end
 	end
-
-	case results.size
-	when 0 then @template.factory :nil
-	when 1 then results[0]
-	else @template.factory(:array).set_from_array(results)
-	end
+	results
     end
 
     def do_use (opts)

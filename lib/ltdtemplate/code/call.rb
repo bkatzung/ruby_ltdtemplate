@@ -8,19 +8,21 @@ require 'ltdtemplate/code'
 
 class LtdTemplate::Code::Call < LtdTemplate::Code
 
-    #
     # Initialize a method call object.
     #
-    # template:: the template object.
-    # target:: the target object.
-    # method:: a native string indicating the method to call.
-    # parameters:: e.g. LtdTemplate::Code::Parameters, encapsulating the
-    #   code blocks to generate the call parameters.
+    # @param template [LtdTemplate] The template object
+    # @param target [LtdTemplate::Code] The target object
+    # @param method [String] The method to call
+    # @param parameters [LtdTemplate::Code::Parameters] The call parameters
     def initialize (template, target, method, parameters)
 	super template
 	@target, @method, @parameters = target, method, parameters
     end
 
+    # Return the result of executing the call.
+    #
+    # @param opts [Hash] Option hash
+    # @option opts [String] :method A method to call on the return value
     def get_value (opts = {})
 	# Increase the call count and call depth.
 	@template.use :calls
@@ -34,5 +36,11 @@ class LtdTemplate::Code::Call < LtdTemplate::Code
 
 	opts[:method] ? result.get_value(opts) : result
     end
+
+    # Pass has/get/set_item calls through to result of call;
+    # in some cases it might be the same value each time.
+    def has_item? (key); get_value.has_item? key; end
+    def get_item (key); get_value.get_item key; end
+    def set_item (key, value); get_value.set_item key, value; end
 
 end

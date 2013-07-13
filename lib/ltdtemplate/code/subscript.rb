@@ -32,7 +32,7 @@ class LtdTemplate::Code::Subscript < LtdTemplate::Code
     # Return the target value, variable[sub1, ..., subN]
     #
     def target (usage = false)
-	current = @base
+	current = @base.get_value
 	native_subs(usage).each { |subs| current = current.get_item subs }
 	current
     end

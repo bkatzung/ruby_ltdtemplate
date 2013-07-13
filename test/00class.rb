@@ -1,7 +1,7 @@
 require 'minitest/autorun'
 require 'ltdtemplate'
 
-class TestLtdTemplate < MiniTest::Unit::TestCase
+class TestLtdTemplate_00 < MiniTest::Unit::TestCase
 
     def test_cmethod_new
 	assert_respond_to LtdTemplate, :new

@@ -51,6 +51,7 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call' then self
+	when 'class' then @template.factory :string, 'Array'
 	when 'join' then do_join opts
 	when 'pop', '->' then do_pop opts
 	when 'push', '+>' then do_push opts
@@ -60,7 +61,7 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
 	when 'size' then @template.factory :number, @sarah.size
 	when 'type' then @template.factory :string, 'array'
 	when 'unshift', '<+' then do_unshift opts
-	else @template.factory :nil
+	else do_method opts, 'Array'
 	end
     end
 

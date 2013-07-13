@@ -1,7 +1,7 @@
 require 'minitest/autorun'
 require 'ltdtemplate'
 
-class TestLtdTemplate < MiniTest::Unit::TestCase
+class TestLtdTemplate_01 < MiniTest::Unit::TestCase
 
     def setup
 	@tpl = LtdTemplate.new

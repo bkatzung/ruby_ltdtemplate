@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LtdTemplate Manual</title>
+<style type='text/css'>
+table { border-collapse: collapse }
+tr { border: solid 1px black }
+td, th { padding-left: 1.5em; padding-right: 0.3em }
+td:first-child, th:first-child { padding-left: 0.3em }
+</style>
+</head>
+<body>
+<h1 id='top'>LtdTemplate Manual<br>
+<span style='font-size: smaller'>Version 0.1.0; July 12, 2013</span></h1>
+
+<h2>Author(s)</h2>
+
+<ul>
+<li>Brian Katzung
+&lt;<a href='mailto:briank@kappacs.com'>briank@kappacs.com</a>&gt;,
+Kappa Computer Solutions, LLC (original author)</li>
+</ul>
+
+<h2 id='contents'>Contents</h2>
+
+<ul>
+<li><a href='#introduction'>Introduction</a></li>
+<li><a href='#template_syntax'>Template Syntax</a></li>
+<li><a href='#code_syntax'>Template Code Syntax</a></li>
+<li><a href='#values_methods'>Values And Methods</a></li>
+<li><a href='#examples'>(Some More) Examples</a></li>
+</ul>
+
+<h2 id='introduction'>Introduction</h2>
+
+<p><a href='http://rubygems.org/gems/ltdtemplate'>LtdTemplate</a> is a
+<a href='http://rugybems.org/'>Ruby Gem</a> implementing resource-limitable
+templating. With proper configuration, it can be used to allow sophisticated
+users to edit their own templates, e.g. for message localization, with
+limited risk of infinite execution loops or other uncontrolled resource
+utilization.</p>
+
+<p>This document describes the template syntax. See the Gem documentation
+for information about the programming interface.</p>
+
+<p>[<a href='#contents'>Contents</a>]</p>
+
+<h2 id='template_syntax'>Template Syntax</h2>
+
+<p>A template consists of inter-mixed sections of literal text and
+template code. The shortest sequences between "<code>&lt;&lt;</code>"
+and "<code>&gt;&gt;</code>" that don't contain "<code>&lt;&lt;</code>"
+or "<code>&gt;&gt;</code>" are template code; the rest is literal
+text. Given a sequence of the form:</p>
+
+<blockquote>
+<code>A&lt;&lt;B&lt;&lt;C&gt;&gt;D&lt;&lt;E&gt;&gt;F&gt;&gt;G&lt;&lt;&lt;H&gt;&gt;&gt;I</code>
+</blockquote>
+
+<p>template code cannot begin at "&lt;&lt;B" because it is not allowed
+to contain "<code>&lt;&lt;</code>" or "<code>&gt;&gt;</code>", so the
+first template code is "<code>&lt;&lt;C&gt;&gt;</code>", the second is
+"<code>&lt;&lt;E&gt;&gt;</code>", and the last is
+"<code>&lt;&lt;H&gt;&gt;</code>". Everything else ("<code>A&lt;&lt;B</code>",
+"<code>D</code>", "<code>F&gt;&gt;G&lt;</code>", and "<code>&gt;I</code>")
+is treated as literal text.</p>
+
+<p>If template code begins with "<code>&lt;&lt;.</code>" (with a period
+immediately after the second "<code>&lt;</code>"), it strips any trailing
+white space from immediately preceding literal text. Likewise, if template
+code ends with "<code>.&gt;&gt;</code>", it strips any leading white space
+from immediately following literal text. Template code consisting of
+only "<code>&lt;&lt;.&gt;&gt;</code>" is considered to meet both
+conditions and is equivalent to "<code>&lt;&lt;..&gt;&gt;</code>".</p>
+
+<p>There need not be any literal text before, after, or between template
+code sequences. Template code sequences between delimiters may also be empty
+(<code>&lt;&lt;&gt;&gt;</code>).</p>
+
+<p>Unless otherwise stated, the remainder of this document will refer to
+template code as the code between the "<code>&lt;&lt;</code>"
+(or "<code>&lt;&lt;.</code>") and "<code>&gt;&gt;</code>" (or
+"<code>.&gt;&gt;</code>") without reference to the delimiters
+themselves.</p>
+
+<p>[<a href='#contents'>Contents</a>]</p>
+
+<h2 id='code_syntax'>Template Code Syntax</h2>
+
+<ul>
+<li><a href='#comment_syntax'>Comments</a></li>
+<li><a href='#strlit_syntax'>String Literals</a></li>
+<li><a href='#numlit_syntax'>Numeric Literals</a></li>
+<li><a href='#variable_syntax'>Variables</a></li>
+<li><a href='#call_syntax'>Method Calls</a></li>
+<li><a href='#assignment_syntax'>Assignments</a></li>
+<li><a href='#predefined_vars'>Pre-Defined Variables</a></li>
+<li><a href='#codeseq_syntax'>Code Sequences</a></li>
+<li><a href='#codeblocks_syntax'>Code Blocks</a></li>
+<li><a href='#subscript_syntax'>Subscripts And Code-Block Bindings</a></li>
+</ul>
+
+<h3 id='comment_syntax'>Comments</h3>
+
+<p>Comments begin with "<code>/*</code>" and end at the nearest
+"<code>*/</code>".</p>
+
+<blockquote><code>/* this is a comment */
+/* and so is /* this */</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='strlit_syntax'>String Literals</h3>
+
+<p>String literals are used to generate <a href='#string_values'>string
+values</a>. LtdTemplate supports two forms: "short" and "regular".</p>
+
+<p>Short string literals begin with a single quote (<code>'</code>) and
+terminate before a period (<code>.</code>), comma (<code>,</code>), opening
+or closing brackets, parentheses, or braces (<code>[](){}</code>), or white
+space. However, any normally terminating character may be included by
+preceding it with a backslash (<code>\</code>).</p>
+
+<p>Regular string literals begin with a double quote (<code>"</code>) and
+terminate at the next double quote. A double quote may be included by
+preceding it with a backslash.</p>
+
+<p>String literals may also contain other "escape sequences" like those in
+Ruby double-quoted strings. Here is the full list:</p>
+
+<table>
+
+<tr><th>Sequence</th><th>Meaning</th></tr>
+
+<tr><td>\M-\C-<i>x</i></td><td>meta-control-<i>x</i></td></tr>
+
+<tr><td>\M-<i>x</i></td><td>meta-<i>x</i></td></tr>
+
+<tr><td>\C-<i>x</i>, \C<i>x</i></td><td>control-<i>x</i></td></tr>
+
+<tr><td>\u<i>dddd</i></td>
+    <td>Unicode four-digit, 16-bit hexadecimal code point <i>dddd</i></td></tr>
+
+<tr><td>\x<i>dd</i></td><td>two-digit, 8-bit hexadecimal <i>dd</i></td></tr>
+
+<tr><td>\<i>ddd</i></td>
+    <td>one, two, or three-digit, 8-bit octal <i>ddd</i></td></tr>
+
+<tr><td>\a</td><td>alert (ASCII BEL)</td></tr>
+
+<tr><td>\b</td><td>backspace (ASCII BS)</td></tr>
+
+<tr><td>\e</td><td>escape (ASCII ESC)</td></tr>
+
+<tr><td>\f</td><td>formfeed (ASCII FF)</td></tr>
+
+<tr><td>\n</td><td>new-line/line-feed (ASCII LF)</td></tr>
+
+<tr><td>\r</td><td>carriage return (ASCII ESC)</td></tr>
+
+<tr><td>\s</td><td>space (ASCII SP)</td></tr>
+
+<tr><td>\t</td><td>horizontal tab (ASCII HT)</td></tr>
+
+<tr><td>\v</td><td>vertical tab (ASCII VT)</td></tr>
+
+<tr><td>\<i>c</i></td>
+    <td>any other character <i>c </i> is just itself</td></tr>
+
+</table>
+
+<p>Examples, with some comments added for annotation:</p>
+
+<blockquote><code>' /* empty */ 'short '&lt;\&lt; '&gt;\&gt;
+/* escaped code delimiters */ "\"regular\" string"</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='numlit_syntax'>Numeric Literals</h3>
+
+<p>Numeric literals are used to generate typical integer or real (decimal)
+<a href='#number_values'>numeric values</a> and consist of an optional
+minus sign (<code>-</code>) followed by one or more digits, and optionally
+followed by a decimal point (<code>.</code>) and one or more additional
+digits.</p>
+
+<blockquote><code>0.125 1 -2 3.0 -4.5</code></blockquote>
+
+<p>LtdTemplate does not support numeric literals in scientific notation
+or bases other than ten.</p>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='variable_syntax'>Variables</h3>
+
+<p>Variables hold references to values, and can hold references to (be
+bound to) different values at different times. They exist within the stack
+of <a href='#namespace_values'>namespaces</a>. Referencing a variable
+normally searches for it beginning in the most recent or "nearest"
+namespace and works back to the first or "root" namespace until a
+variable with that name is found. If the name begins with circumflex
+(<code>^</code>), the search begins in the parent namespace (if there is
+one) instead of the current namespace. If the name begins with at-sign
+(<code>@</code>), only the root namespace is searched. If the variable
+has not been <a href='#assignment_syntax'>assigned</a>, the
+<a href='#nil_value'>nil</a> value is used.</p>
+
+<p>Variable names must be in one of the following formats (unless accessed
+as an <a href='#subscript_syntax'>element</a> of a specific
+namespace&mdash;see last example) and are case-sensitive:</p>
+
+<ol>
+    <li>A letter or an underscore (<code>_</code>), followed by zero
+    or more letters, numbers, or underscores</li>
+
+    <li>An at-sign or circumflex followed by one or more letters, numbers,
+    or underscores</li>
+
+    <li>An at-sign, circumflex, or dollar-sign (<code>$</code>) by itself</li>
+</ol>
+
+<blockquote><code>name item1 _2 ^parent @root $
+@['&lt;\&lt;weird&gt;\&gt;]</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='call_syntax'>Method Calls</h3>
+
+<p>A method call performs an action on, or returns information about,
+a value. A method call consists of a value expression followed by a
+period (<code>.</code>) followed by the desired method name, optionally
+followed by an open parenthesis "<code>(</code>", zero or more method
+call parameters separated by commas (<code>,</code>), and a closing
+parenthesis "<code>)</code>". Parameters may be positional (also called
+sequential) or named (also called random-access). Use the "dot dot"
+symbol (<code>..</code>) to terminate the positional parameters and begin
+the named parameters.</p>
+
+<blockquote><code>value_expression.method_name(positional_1,
+</code>...<code>, positional_N .. name_1, value_1,
+</code>...<code>, name_N, value_N)</code></blockquote>
+
+<p>Method names are case-sensitive and must be in one of the following
+formats:</p>
+
+<ol>
+<li>A letter or underscore (<code>_</code>) followed by zero or more
+letters, numbers, or underscores</li>
+<li>One or more punctuation characters that don't have any other meaning
+(these are often referred to as "operators" in other syntax definitions),
+such as:</li>
+</ol>
+
+<blockquote><code>+ - * / % & | ! < <= = == != >= ></code></blockquote>
+
+<p>The parentheses are optional if no parameters are to be supplied to
+the method call. The period is optional for "operator-style" method calls
+if not immediately preceded by punctuation.</p>
+
+<blockquote><code>3.type /* => number */<br>
+3.type.length /* "chained" method calls; => 6 */<br>
+1+(2,3,4) /* short for */ 1.+(2,3,4) /* => 10 */</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='assignment_syntax'>Assignments</h3>
+
+<p>Variables support two assignment method calls: unconditional
+(<code>=</code>) and conditional (<code>?=</code>). A conditional
+assignment does nothing if the variable is already bound to (holds a
+reference to) a value (including the nil value). Assignments do not
+render in the template output.</p>
+
+<p>If called with a single parameter and no "dot dot" symbol, the value of
+the single parameter is assigned. Otherwise, all the parameters are
+assigned as an array. See also <a href='#array_values'>array values</a>.</p>
+
+<blockquote><code>num=(5) num?=(6) /* num is still 5 */<br>
+empty1= empty2=() /* empty arrays */<br>
+single=(10 ..) /* one element */ double=(5, 10) /* two */<br>
+matrix=($.*(1, 0), $.*(0, 1) .. 'type, 'identity)<br>
+matrix[0, 0] /* => 1 */ matrix['type] /* => identity */</code></blockquote>
+
+<p>Variables beginning with circumflex (<code>^</code>) will be created in
+the parent namespace (if they do not already exist) and variables beginning
+with at-sign (<code>@</code>) will be created in the root namespace. All
+others will be created in the current namespace.</p>
+
+<p>See also the <a href='#namespaces_var_method'>var</a> method for
+<a href='#namespace_values'>namespaces</a>.</p>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='predefined_vars'>Pre-Defined Variables</h3>
+
+<p>The following variables are pre-defined by LtdTemplate:</p>
+
+<table>
+
+<tr><th>Name</th><th>Description</th></tr>
+
+<tr><td><code>$</code></td>
+    <td>This is the current <a href='#namespace_values'>namespace</a>. A
+    new namespace is automatically created each time a
+    <a href='#code_blocks'>code block</a> is executed and is subsequently
+    destroyed when the code block completes.</td></tr>
+
+<tr><td><code>^</code></td>
+    <td>This variable refers to the previous namespace if there is one,
+    or <a href='#nil_value'>nil</a> if there isn't.</td></tr>
+
+<tr><td><code>@</code></td>
+    <td>This variable refers to the first (also known as "root" or
+    "top-level") namespace.</td></tr>
+
+<tr><td><code>_</code></td>
+    <td>This variable contains the parameters passed into the template
+    or current <a href='#code_block'>code block</a>.</td></tr>
+
+</table>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='codeseq_syntax'>Code Sequences</h3>
+
+<p>A code sequence refers to a sequence of zero or more template code
+expressions. <a href='#template_syntax'>Templates</a>,
+<a href='#call_syntax'>method call</a> parameters, and code block bodies
+are all code sequences.</p>
+
+<p>If a code sequence consists of a single, non-string value and does
+not constitute the entire template code, it is retained as-is. Otherwise,
+the string value of each element in the sequence, if any, is combined to
+produce the result of the code sequence.</p>
+
+<blockquote><code>'Hello $.true ", " num=(5) num-(4) " world!"<br>
+/* 5 and 4 are single, non-string values in their code sequences */<br>
+/* $.true and num=(5) render nothing */<br>
+/* num-(4) returns the number 1 but it's string value gets used */<br>
+/* => Hello, 1 world! */</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='codeblock_syntax'>Code Blocks</h3>
+
+<p>If you surround a <a href='#code_sequences'>code sequence</a>
+by braces (<code>{</code> and <code>}</code>), you create a code
+block. A code block is a value which does not render directly, but
+can be called as a <a href='#method_calls'>method call</a>, executing
+the code sequence within the code block.</p>
+
+<blockquote><code>render_method=({ $.method })<br>
+render_method.hi " " render_method.there
+/* => hi there */</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h3 id='subscript_syntax'>Subscripts And Code-Block Bindings</h3>
+
+<p>Any expression that evaluates to an array (or tree of nested arrays)
+may be subscripted to select a particular value or nested array from the
+array. A subscript consists of an open bracket (<code>[</code>) followed
+by one or more selector expressions separated by commas followed by a
+closing bracket (<code>]</code>). Consecutive selector expressions are
+used to traverse progressively more deeply nested arrays.</p>
+
+<blockquote><code>array_var['items, 5] /* fetches item "5" (which
+might also be an array) from array "items" in the array referenced by
+array_var */<br>
+array_var['items][5] /* as above - alternate syntax */</code></blockquote>
+
+<p>If the requested item does not exist, the special value
+"<a href='#nil'>nil</a>" is used instead.</p>
+
+<p>LtdTemplate also uses subscript syntax to bind
+<a href='#code_blocks'>code blocks</a> to non-array values. These can
+subsequently be called like <a href='#method_calls'>methods</a>. They
+never override standard methods.</p>
+
+<blockquote><code>x['greeting]=({'hello}) /* where x is not an array
+value */<br>x.greeting /* => hello */</code></blockquote>
+
+<p>You can also bind code blocks to proxy objects to be used by all
+array, boolean, number, or string values.</p>
+
+<blockquote><code>@Array?=(') /* bind the array proxy to a unique object */<br>
+@Array['list]=({ $.target.join(", ") }) /* bind the list method */<br>
+$.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
+
+<h2 id='values_methods'>Values And Methods</h2>
+
+<ul>
+<li><a href='#array_values'>Arrays</a></li>
+<li><a href='#boolean_values'>Booleans (True And False)</a></li>
+<li><a href='#codeblock_values'>Code Blocks</a></li>
+<li><a href='#namespace_values'>Namespaces</a></li>
+<li><a href='#nil_value'>Nil</a></li>
+<li><a href='#number_values'>Numbers</a></li>
+<li><a href='#string_values'>Strings</a></li>
+</ul>
+
+<h3 id='array_values'>Arrays</h3>
+
+<p>LtdTemplate does not have array literals, but you can construct arrays
+using the variable assignment method (see <a href='#variable_syntax'>variable
+syntax</a>) or via the <a href='#namespace_star_method'>namespace anonymous
+array</a> method:</p>
+
+<blockquote><code>empty=() /* empty array */ single=(10 ..) /* one element */
+double=(5, 10) /* two */<br>
+matrix=($.*(1, 0), $.*(0, 1) .. 'type, 'identity)<br>
+matrix[0, 0] /* => 1 */ matrix['type] /* => identity */</code></blockquote>
+
+<p>Arrays render to the concatenation of the renderings of their sequential
+(positional) elements; random-access (named) elements are ignored.</p>
+
+<p>Standard methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>call</code></td><td>Same as the array itself</td></tr>
+
+<tr><td><code>class</code></td><td>Returns the string "Array"</td></tr>
+
+<tr><td><code>join</code></td><td>Joins sequential (positional)
+    elements</td></tr>
+
+<tr><td><code>join(</code><i>separator</i><code>)</code></td><td>Join with
+    <i>separator</i> between elements</td></tr>
+
+<tr><td><code>join(</code><i>two</i><code>, </code><i>first</i><code>,
+    </code><i>middle</i><code>, </code><i>last</i><code>)</code></td>
+    <td>Joins two elements with <i>two</i> as the separator or more than two
+    elements with <i>first</i> as the first separator, <i>last</i> as the
+    last separator, and <i>middle</i> for all other separators</td></tr>
+
+<tr><td><code>pop</code>, <code>-&gt;</code></td><td>Pop the last sequential
+    element</td></tr>
+
+<tr><td><code>push(</code><i>list</i><code>)</code>,
+    <code>+&gt;(</code><i>list</i><code>)</code></td>
+    <td>Adds zero or more elements in the <i>list</i> to the end of the
+    array</td></tr>
+
+<tr><td><code>rnd_size</code></td><td>The number of random-access (named)
+    elements</td></tr>
+
+<tr><td><code>seq_size</code></td><td>The number of sequential (positional)
+    elements</td></tr>
+
+<tr><td><code>shift</code>, <code>&lt;-</code></td><td>Shift the first
+    sequential element</td></tr>
+
+<tr><td><code>size</code></td><td>The total number of elements in the
+    array</td></tr>
+
+<tr><td><code>type</code></td><td>Returns the string "array"</td></tr>
+
+<tr><td><code>unshift(</code><i>list</i><code>)</code>,
+    <code>&lt;+(</code><i>list</i><code>)</code></td>
+    <td>Adds zero or more elements in the <i>list</i> to the beginning of
+    the array</td></tr>
+
+</table>
+
+<p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
+all array values as follows:</p>
+
+<blockquote><code>@Array?=(')
+@Array['</code><i>method_name</i><code>]=({</code>
+<i>code sequence</i> <code>})</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h3 id='boolean_values'>Booleans (True And False)</h3>
+
+<p>LtdTemplate supports boolean values (true and false). They can be
+accessed via the namespace method calls <code>$.true</code> and
+<code>$.false</code>. There is only one true value and one false value,
+although other values can be interpreted in boolean context (the nil
+value is treated as false; all others, including the number 0 and
+empty strings, are treated as true).</p>
+
+<p>Standard methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>call</code></td><td>Same as the boolean itself</td></tr>
+
+<tr><td><code>class</code></td><td>Returns the string "Boolean"</td></tr>
+
+<tr><td><code>string</code>, <code>str</code></td>
+    <td>Returns the string "true" for true and "false" for false</td></tr>
+
+<tr><td><code>type</code></td><td>Returns the string "boolean"</td></tr>
+
+<tr><td><code>+</code>, <code>|</code>, <code>or</code></td>
+    <td>Returns the "logical or" of the value and any supplied call
+    parameters (if <b>any are true</b>, the result is true, otherwise the
+    result is false)</td></tr>
+
+<tr><td><code>*</code>, <code>&</code>, <code>and</code></td>
+    <td>Returns the "logical and" of the value and any supplied call
+    parameters (if <b>all are true</b>, the result is true, otherwise the
+    result is false)</td></tr>
+
+<tr><td><code>!</code>, <code>not</code></td>
+    <td>Returns the "logical not and" of the value and any supplied call
+    parameters (if <b>all are false</b>, the result is true, otherwise the
+    result is false)</td></tr>
+
+</table>
+
+<p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods
+for true, false, or both boolean
+values as follows:</p>
+
+<blockquote><code>$.true['</code><i>method_name</i><code>]=({</code>
+<i>code sequence</i> <code>})<br>
+$.false['</code><i>method_name</i><code>]=({</code>
+<i>code sequence</i> <code>})<br>
+@Boolean?=(') @Boolean['</code><i>method_name</i><code>]=({</code>
+<i>code sequence</i> <code>})</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h3 id='codeblock_values'>Code Blocks</h3>
+
+<p>Standard methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>type</code></td><td>Returns the string "code"</td></tr>
+
+</table>
+
+<p>All other methods execute the code block in a new
+<a href='#namespace_values'>namespace</a>.</p>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h3 id='namespace_values'>Namespaces</h3>
+
+<p>A namespace is a storage area for variables. A new namespace is created
+each time the template is rendered or a <a href='#codeblock_values'>code
+block</a> is executed. In the case of code blocks, the previously active
+namespace becomes the parent (<code>^</code>) of the new namespace
+(<code>$</code>).</p>
+
+<p>Namespaces provide a number of <a href='#predefined_vars'>pre-defined
+variables</a>, as well as <a href='#call_syntax'>method calls</a> for
+loops and conditionals that are traditionally statements in other
+programming environments.</p>
+
+<p>Standard methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>array(</code><i>elements</i><code>)</code>,
+    <code>*(</code><i>elements</i><code>)</code></td>
+    <td>Returns an anonymous array (see <a href='#array_values'>array
+    values</a>)</td></tr>
+
+<tr><td><code>false</code></td><td>Returns the boolean false value</td></tr>
+
+<tr><td><code>if(</code><i>condition_1</i><code>,
+    </code><i>return_1</i><code>,</code> ...<code>,</code>
+    <i>condition_N</i><code>,</code> <i>return_N</i><code>,</code>
+    <i>default</i><code>)</code></td>
+    <td>Processes each condition in turn. The return value
+    corresponding to the first condition that evaluates to true is
+    returned. If none of the conditions evaluate to true, the optional
+    <i>default</i> value (or the nil value, in the case of an even number
+    of parameters) is returned. Parameters can be supplied as
+    <a href='#codeblock_syntax'>code blocks</a> to avoid execution unless
+    and until needed.</td></tr>
+
+<tr><td><code>loop(</code><i>before</i><code>,</code>
+    <i>body</i><code>,</code> <i>after</i><code>)</code></td>
+    <td>If the <i>before</i> condition evaluates to true, the
+    <i>body</i> is executed and the optional <i>after</i> condition is
+    evaluated. If the <i>after</i> condition is absent or evaluates to
+    true, the loop starts over with the <i>before</i> condition. The
+    <i>body</i> and non-constant conditions should be supplied as
+    <a href='#codeblock_syntax'>code blocks</a>. Returns an
+    <a href='#array_values'>array</a> of <i>body</i> results
+    (one element per loop iteration).</td></tr>
+
+<tr><td><code>method</code></td><td>Returns the method name used to
+    call a <a href='#codeblock_syntax'>code block</a>, or "render" for
+    top-level template code</td></tr>
+
+<tr><td><code>nil</code></td><td>Returns the nil value</td></tr>
+
+<tr><td><code>target</code></td><td>Returns the target object in
+    a <a href='#codeblock_syntax'>code block</a> being called as
+    part of an object binding</td></tr>
+
+<tr><td><code>true</code></td><td>Returns the boolean true value</td></tr>
+
+<tr><td><code>use(</code><i>name</i><code>)</code></td>
+    <td>Calls the template loader to load resource <i>name</i></td></tr>
+
+<tr><td id='namespaces_var_method'><code>var(</code><i>name_1</i><code>,</code> ...<code>,</code>
+    <i>name_N</i> <code>..</code> <i>set_1</i><code>,</code>
+    <i>value_1</i><code>,</code> ...<code>,</code> <i>set_N</i><code>,</code>
+    <i>value_N</i><code>)</code></td>
+    <td>Creates and (re-)sets variables named by the supplied strings. The
+    variables in the sequential parameters section, <i>name_1</i> through
+    <i>name_N</i>, are assigned the nil value. The variables in the
+    random-access section, <i>set_1</i> through <i>set_N</i>, are assigned
+    the corresponding values from <i>value_1</i> through
+    <i>value_N</i>.</td></tr>
+
+</table>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h3 id='nil_value'>Nil</h3>
+
+<p>LtdTemplate supports a "nil" value to represent the lack of another
+value. It can be accessed via the namespace method call
+<code>$.nil</code>. There is only one nil value.</p>
+
+<p>Standard methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>type</code></td><td>Returns the string "nil"</td></tr>
+
+</table>
+
+<p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods
+for the nil value as follows:</p>
+
+<blockquote><code>$.nil['</code><i>method_name</i><code>]=({</code>
+<i>code sequence</i> <code>})</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h3 id='number_values'>Numbers</h3>
+
+<p>Standard methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>abs</code></td>
+    <td>Returns the absolute value of the number</td></tr>
+
+<tr><td><code>call</code></td><td>Returns the number itself</td></tr>
+
+<tr><td><code>ceil</code></td><td>Returns the closest greater or equal
+    integer</td></tr>
+
+<tr><td><code>class</code></td><td>Returns the string "Number"</td></tr>
+
+<tr><td><code>floor</code></td><td>Returns the closest lesser or equal
+    integer</td></tr>
+
+<tr><td><code>flt, float</code></td><td>Returns the number as a
+    floating-point number</td></tr>
+
+<tr><td><code>int</code></td><td>Returns the number as an integer</td></tr>
+
+<tr><td><code>str</code>, <code>string</code></td>
+    <td>Returns the number as a string</td></tr>
+
+<tr><td><code>type</code></td><td>Returns the string "number"</td></tr>
+
+<tr><td><code>+(</code><i>list</i><code>)</code></td>
+    <td>Returns the sum of the number and numeric items in
+    <i>list</i></td></tr>
+
+<tr><td><code>-</code></td>
+    <td>With no parameters, returns the negative of the number</td></tr>
+
+<tr><td><code>-(</code><i>list</i><code>)</code></td>
+    <td>Returns the difference of the number and the sum of numeric
+    items in the non-empty <i>list</i></td></tr>
+
+<tr><td><code>*(</code><i>list</i><code>)</code></td>
+    <td>Returns the product of the number and the numeric items in
+    <i>list</i></td></tr>
+
+<tr><td><code>/(</code><i>list</i><code>)</code></td>
+    <td>Returns the quotient of the number and the numeric items in
+    <i>list</i></td></tr>
+
+<tr><td><code>%(</code><i>list</i><code>)</code></td>
+    <td>Returns the progressive remainder of the number and the
+    numeric items in <i>list</i></td></tr>
+
+<tr><td><code>&(</code><i>list</i><code>)</code></td>
+    <td>Returns the bit-wise "AND" of the number and the numeric items
+    in <i>list</i></td></tr>
+
+<tr><td><code>|(</code><i>list</i><code>)</code></td>
+    <td>Returns the bit-wise "OR" of the number and the numeric items
+    in <i>list</i></td></tr>
+
+<tr><td><code>^(</code><i>list</i><code>)</code></td>
+    <td>Returns the bit-wise "exclusive OR" of the number and the numeric
+    items in <i>list</i></td></tr>
+
+<tr><td><i>op</i> or <i>op</i><code>(</code><i>value</i><code>)</code> for
+    <i>op</i> in <code>&lt;=</code>, <code>&lt;</code>, <code>==</code>,
+    <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code></td>
+    <td>Returns whether the number is less than or equal to, less than,
+    equal to, not equal to, greater than, or greater than or equal to,
+    <i>value</i>. If <i>value</i> is not supplied or is not numeric, zero
+    is used.</td></tr>
+
+</table>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h3 id='string_values'>Strings</h3>
+
+<p>Standard methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>call</code></td><td>Returns the string itself</td></tr>
+
+<tr><td><code>class</code></td><td>Returns the string "String"</td></tr>
+
+<tr><td><code>flt</code>, <code>float</code></td>
+    <td>Returns the floating-point value of the string</td></tr>
+
+<tr><td><code>idx(</code><i>target</i><code>,
+    </code><i>offset</i><code>)</code>,
+    <code>index(</code><i>target</i><code>,
+    </code><i>offset</i><code>)</code></td>
+    <td>Search for <i>target</i> left-to-right in the string beginning at
+    position <i>offset</i> (default 0) and return the offset from the start
+    of the string at which found (or -1 if not found)</td></tr>
+
+<tr><td><code>int</code></td>
+    <td>Returns the integer value of the string</td></tr>
+
+<tr><td><code>len</code>, <code>length</code></td>
+    <td>Returns the length of the string</td></tr>
+
+<tr><td><code>ridx(</code><i>string</i><code>,
+    </code><i>offset</i><code>)</code>,
+    <code>rindex(</code><i>string</i><code>,
+    </code><i>offset</i><code>)</code></td>
+    <td>Search for <i>target</i> right-to-left in the string beginning at
+    position <i>offset</i> (the end of the string by default) and return
+    the offset from the start of the string at which found (or -1 if not
+    found)</td></tr>
+
+<tr><td><code>rng(</code><i>begin</i><code>,
+    </code><i>end</i><code>)</code>,
+    <code>range(</code><i>begin</i><code>,
+    </code><i>end</i><code>)</code></td>
+    <td>Returns characters <i>begin</i> through <i>end</i> of the string,
+    inclusive, counting from zero. Either may be negative, in which case
+    counting is backwards from the end of the string.</td></tr>
+
+<tr><td><code>slc(</code><i>begin</i><code>,
+    </code><i>length</i><code>)</code>,
+    <code>slice(</code><i>begin</i><code>,
+    </code><i>length</i><code>)</code></td>
+    <td>Returns <i>length</i> characters beginning at <i>begin</i>,
+    counting from zero. <i>Begin</i> may be negative, in which case
+    counting is backwards from the end of the string.</td></tr>
+
+<tr><td><code>str</code>, <code>string</code></td>
+    <td>Returns the string itself</td></tr>
+
+<tr><td><code>type</code></td><td>Returns the string "string"</td></tr>
+
+<tr><td><code>+(</code><i>list</i><code>)</code></td>
+    <td>Returns the concatenation of the string and the items in
+    <i>list</i></td></tr>
+
+<tr><td><code>*(</code><i>value</i><code>)</code></td>
+    <td>Returns the concatenation of the string repeated <i>value</i>
+    times. If <i>value</i> is negative, the reverse of the string repeated
+    -<i>value</i> times is returned. If <i>value</i> is omitted or
+    not numeric, an empty string is returned.</td></tr>
+
+<tr><td><i>op</i> or <i>op</i><code>(</code><i>value</i><code>)</code> for
+    <i>op</i> in <code>&lt;=</code>, <code>&lt;</code>, <code>==</code>,
+    <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code></td>
+    <td>Returns whether the string is less than or equal to, less than,
+    equal to, not equal to, greater than, or greater than or equal to,
+    <i>value</i>. If <i>value</i> is not supplied, the empty string
+    is used.</td></tr>
+
+</table>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h2 id='examples'>(Some More) Examples</h2>
+
+<p>This example binds a list method to arrays to include commas and "and"
+between elements:</p>
+
+<blockquote><code>@Array?=(') @Array['list]=({<br>
+$.target.join(" and ", ", ", ", ", ", and ") })<br>
+$.*('Ruby).list /* => Ruby */<br>
+$.*('Perl, 'Ruby).list /* => Perl and Ruby */<br>
+$.*('Perl, 'PHP, 'Python, 'Ruby).list /* => Perl, PHP, Python, and Ruby */
+</code></blockquote>
+
+<p>This example binds a method called "en_nth" on number values to return
+the English "nth" for the number (e.g. 1st for 1, 2nd for 2, 3rd for 3,
+etc.) and then generates them from -11 to 24:</p>
+
+<blockquote><code>@Number?=(') @Number['en_nth]=({<br>
+$.var(.. 'n, $.target) $.var(.. 'n10, n.abs%(10), 'n100, n.abs%(100))<br>
+n $.if({ n100&gt;=(11)&(n100&lt;=(20)) }, 'th, { n10==(1) }, 'st,<br>
+{ n10==(2) }, 'nd, { n10==(3) }, 'rd, 'th) })<br>
+n=(-11) $.loop({ n&lt;=(24) }, { n.en_nth n=(n+(1)) }).join(", ")
+</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>]</p>
+
+</body>
+</html>

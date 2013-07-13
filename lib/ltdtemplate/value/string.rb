@@ -21,16 +21,17 @@ class LtdTemplate::Value::String < LtdTemplate::Code
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call', 'str', 'string' then self
+	when 'class' then @template.factory :string, 'String'
 	when 'flt', 'float' then @template.factory :number, @value.to_f
 	when 'int' then @template.factory :number, @value.to_i
 	when 'len', 'length' then @template.factory :number, @value.length
 	when 'rng', 'range', 'slc', 'slice' then do_range_slice opts
-	when 'typ', 'type' then @template.factory :string, 'string'
+	when 'type' then @template.factory :string, 'string'
 	when '+' then do_add opts
 	when '*' then do_multiply opts
 	when 'idx', 'index', 'ridx', 'rindex' then do_index opts
 	when '<', '<=', '==', '!=', '>=', '>' then do_compare opts
-	else do_method opts
+	else do_method opts, 'String'
 	end
     end
 
@@ -47,11 +48,16 @@ class LtdTemplate::Value::String < LtdTemplate::Code
     end
 
     def do_multiply (opts)
-	str = @value
+	str = ''
 	params = params.positional if params = opts[:parameters]
 	if params and params.size > 0
 	    times = params[0].to_native
-	    if times.is_a? Integer and times >= 0
+	    if times.is_a? Integer
+		str = @value
+		if times < 0
+		    str = str.reverse
+		    times = -times
+		end
 		@template.using :string_length, (str.length * times)
 		str = str * times
 	    end

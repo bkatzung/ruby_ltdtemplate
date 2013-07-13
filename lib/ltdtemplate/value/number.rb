@@ -23,12 +23,15 @@ class LtdTemplate::Value::Number < LtdTemplate::Code
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call' then self
+	when 'abs' then (@value >= 0) ? self :
+	  @template.factory(:number, -@value)
 	when 'ceil' then @template.factory :number, @value.ceil
+	when 'class' then @template.factory :string, 'Number'
 	when 'floor' then @template.factory :number, @value.floor
 	when 'flt', 'float' then @template.factory :number, @value.to_f
 	when 'int' then @template.factory :number, @value.to_i
 	when 'str', 'string' then @template.factory :number, @value.to_s
-	when 'typ', 'type' then @template.factory :string, 'number'
+	when 'type' then @template.factory :string, 'number'
 	when '+' then do_sequential(opts) { |a, b| a + b }
 	when '-' then do_subtract opts
 	when '*' then do_sequential(opts) { |a, b| a * b }
@@ -38,7 +41,7 @@ class LtdTemplate::Value::Number < LtdTemplate::Code
 	when '|' then do_sequential(opts) { |a, b| a | b }
 	when '^' then do_sequential(opts) { |a, b| a ^ b }
 	when '<', '<=', '==', '!=', '>=', '>' then do_compare opts
-	else do_method opts
+	else do_method opts, 'Number'
 	end
     end
 

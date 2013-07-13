@@ -1,0 +1,15 @@
+2013-07-10 Version 0.1.0
+	Fixed class names in unit tests.
+	String.* now handles multipliers <= 0.
+	Added number.abs (absolute value) method.
+	$.loop now consistently returns an array of results.
+	Added $.array / $.* anonymous array method.
+	Fixed subscripting on method calls.
+	Fixed multi-line comment parsing.
+	Added support for class-variable (proxy) code-block bindings
+	and "class" method for supported types.
+	Fixed an infinite-loop code leg in the parser.
+	Added the template manual (TEMPLATE_MANUAL.html).
+
+2013-07-08 Version 0.0.1
+	First release

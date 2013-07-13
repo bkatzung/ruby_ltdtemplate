@@ -10,7 +10,7 @@ class LtdTemplate::Code
 
     # @!attribute [r] tpl_methods
     # @return [Array<LtdTemplate::Value::Code_Block>]
-    # The methods assigned to non-array values.
+    # The code blocks bound to non-array values.
     attr_reader :tpl_methods
 
     # Return a new factory object instance (or a singleton in some
@@ -75,11 +75,22 @@ class LtdTemplate::Code
 	@template.factory :nil
     end
 
-    def do_method (opts)
-	name = opts[:method]
-	if name and @tpl_methods.has_key? name
+    # Try to execute code-block methods bound to the object or object
+    # class. Returns the return value from the code block or t-nil.
+    def do_method (opts, class_name = nil)
+	method = nil
+	if name = opts[:method]
+	    if @tpl_methods.has_key? name
+		method = @tpl_methods[name]
+	    elsif class_name
+		class_var = @template.factory :variable, class_name
+		method = class_var.target.tpl_methods[name] if
+		  class_var.is_set?
+	    end
+	end
+	if method
 	    opts[:target] = self
-	    @tpl_methods[name].get_value opts
+	    method.get_value opts
 	else
 	    @template.factory :nil
 	end

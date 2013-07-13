@@ -26,13 +26,14 @@ class LtdTemplate::Value::Boolean < LtdTemplate::Code
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call' then self
+	when 'class' then @template.factory :string, 'Boolean'
 	when 'str', 'string' then @template.factory :string,
 	  (@bool ? 'true' : 'false')
-	when 'typ', 'type' then @template.factory :string, 'boolean'
+	when 'type' then @template.factory :string, 'boolean'
 	when '+', '|', 'or' then do_or opts
 	when '*', '&', 'and' then do_and opts
 	when '!', 'not' then do_not opts
-	else do_method opts
+	else do_method opts, 'Boolean'
 	end
     end
 

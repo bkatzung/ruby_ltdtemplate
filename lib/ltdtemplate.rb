@@ -277,7 +277,7 @@ class LtdTemplate
 	  [\.(,)\[\]{}]		# methods, calls, elements, blocks
 	  |
 	  \s+
-	  )}x).grep(/\S/).each do |token|
+	  )}mx).grep(/\S/).each do |token|
 	    if token =~ %r{^/\*.*\*/$}s
 		# Ignore comment
 	    elsif token =~ /^'(.*)/s or token =~ /^"(.*)"$/s
@@ -340,8 +340,9 @@ class LtdTemplate
 		    else
 			params = factory :parameters
 		    end
-		    code.push factory(:call, code.pop, method[1], params)
-		end if code[0] and tokens[0]
+		    code.push factory(:call, code.pop, method[1], params) if
+		      code[0]
+		end if tokens[0]
 	    when :method	# punctuated method call
 		# Insert the implied dot and re-parse
 		tokens.unshift [ :dot ], token
