@@ -11,7 +11,7 @@ td:first-child, th:first-child { padding-left: 0.3em }
 </head>
 <body>
 <h1 id='top'>LtdTemplate Manual<br>
-<span style='font-size: smaller'>Version 0.1.0; July 12, 2013</span></h1>
+<span style='font-size: smaller'>Version 0.1.3; July 13, 2013</span></h1>
 
 <h2>Author(s)</h2>
 
@@ -314,8 +314,9 @@ others will be created in the current namespace.</p>
     "top-level") namespace.</td></tr>
 
 <tr><td><code>_</code></td>
-    <td>This variable contains the parameters passed into the template
-    or current <a href='#code_block'>code block</a>.</td></tr>
+    <td>This variable refers to the array of positional and/or named
+    parameters passed into the template or current
+    <a href='#code_block'>code block</a>.</td></tr>
 
 </table>
 
@@ -325,8 +326,8 @@ others will be created in the current namespace.</p>
 
 <p>A code sequence refers to a sequence of zero or more template code
 expressions. <a href='#template_syntax'>Templates</a>,
-<a href='#call_syntax'>method call</a> parameters, and code block bodies
-are all code sequences.</p>
+<a href='#call_syntax'>method call</a> parameters, and
+<a href='#codeblock_syntax'>code block</a> bodies are all code sequences.</p>
 
 <p>If a code sequence consists of a single, non-string value and does
 not constitute the entire template code, it is retained as-is. Otherwise,
