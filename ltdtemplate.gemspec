@@ -5,8 +5,8 @@ Gem::Specification.new do |s|
   s.authors      = ["Brian Katzung"]
   s.email        = ["briank@kappacs.com"]
   s.homepage     = "http://rubygems.org/gems/ltdtemplate"
-  s.summary      = "A template system with limitable resource usage"
-  s.description  = "A template system with limitable resource usage, e.g. for administrator-editable message localization"
+  s.summary      = "A resource-limitable, textual templating system"
+  s.description  = "A resource-limitable, user-editable, textual templating system"
   s.license      = "MIT"
  
   s.files        = Dir.glob("lib/**/*") +

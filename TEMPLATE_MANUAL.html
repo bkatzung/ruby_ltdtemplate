@@ -34,11 +34,15 @@ Kappa Computer Solutions, LLC (original author)</li>
 <h2 id='introduction'>Introduction</h2>
 
 <p><a href='http://rubygems.org/gems/ltdtemplate'>LtdTemplate</a> is a
-<a href='http://rugybems.org/'>Ruby Gem</a> implementing resource-limitable
-templating. With proper configuration, it can be used to allow sophisticated
-users to edit their own templates, e.g. for message localization, with
-limited risk of infinite execution loops or other uncontrolled resource
-utilization.</p>
+<a href='http://rugybems.org/'>Ruby Gem</a> implementing resource-limitable,
+user-editable, textual templating.</p>
+
+<p>Note that "user-editable" does not particularly refer to simplicity
+(understanding most templates will be facilitated by having a programming
+background), but rather that, with proper configuration, it can be used to
+allow sophisticated users to edit their own templates (e.g. for message
+localization) with limited risk of infinite execution loops or recursion,
+excessively long strings, or other uncontrolled resource utilization.</p>
 
 <p>This document describes the template syntax. See the Gem documentation
 for information about the programming interface.</p>
@@ -96,7 +100,7 @@ themselves.</p>
 <li><a href='#assignment_syntax'>Assignments</a></li>
 <li><a href='#predefined_vars'>Pre-Defined Variables</a></li>
 <li><a href='#codeseq_syntax'>Code Sequences</a></li>
-<li><a href='#codeblocks_syntax'>Code Blocks</a></li>
+<li><a href='#codeblock_syntax'>Code Blocks</a></li>
 <li><a href='#subscript_syntax'>Subscripts And Code-Block Bindings</a></li>
 </ul>
 
@@ -286,7 +290,7 @@ the parent namespace (if they do not already exist) and variables beginning
 with at-sign (<code>@</code>) will be created in the root namespace. All
 others will be created in the current namespace.</p>
 
-<p>See also the <a href='#namespaces_var_method'>var</a> method for
+<p>See also the <a href='#namespace_var_method'>var</a> method for
 <a href='#namespace_values'>namespaces</a>.</p>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
@@ -302,7 +306,7 @@ others will be created in the current namespace.</p>
 <tr><td><code>$</code></td>
     <td>This is the current <a href='#namespace_values'>namespace</a>. A
     new namespace is automatically created each time a
-    <a href='#code_blocks'>code block</a> is executed and is subsequently
+    <a href='#codeblock_syntax'>code block</a> is executed and is
     destroyed when the code block completes.</td></tr>
 
 <tr><td><code>^</code></td>
@@ -316,7 +320,7 @@ others will be created in the current namespace.</p>
 <tr><td><code>_</code></td>
     <td>This variable refers to the array of positional and/or named
     parameters passed into the template or current
-    <a href='#code_block'>code block</a>.</td></tr>
+    <a href='#codeblock_syntax'>code block</a>.</td></tr>
 
 </table>
 
@@ -344,10 +348,10 @@ produce the result of the code sequence.</p>
 
 <h3 id='codeblock_syntax'>Code Blocks</h3>
 
-<p>If you surround a <a href='#code_sequences'>code sequence</a>
+<p>If you surround a <a href='#codeseq_syntax'>code sequence</a>
 by braces (<code>{</code> and <code>}</code>), you create a code
 block. A code block is a value which does not render directly, but
-can be called as a <a href='#method_calls'>method call</a>, executing
+can be called as a <a href='#call_syntax'>method call</a>, executing
 the code sequence within the code block.</p>
 
 <blockquote><code>render_method=({ $.method })<br>
@@ -371,11 +375,11 @@ array_var */<br>
 array_var['items][5] /* as above - alternate syntax */</code></blockquote>
 
 <p>If the requested item does not exist, the special value
-"<a href='#nil'>nil</a>" is used instead.</p>
+"<a href='#nil_value'>nil</a>" is used instead.</p>
 
 <p>LtdTemplate also uses subscript syntax to bind
-<a href='#code_blocks'>code blocks</a> to non-array values. These can
-subsequently be called like <a href='#method_calls'>methods</a>. They
+<a href='#codeblock_syntax'>code blocks</a> to non-array values. These can
+subsequently be called like <a href='#call_syntax'>methods</a>. They
 never override standard methods.</p>
 
 <blockquote><code>x['greeting]=({'hello}) /* where x is not an array
@@ -406,8 +410,8 @@ $.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
 
 <p>LtdTemplate does not have array literals, but you can construct arrays
 using the variable assignment method (see <a href='#variable_syntax'>variable
-syntax</a>) or via the <a href='#namespace_star_method'>namespace anonymous
-array</a> method:</p>
+syntax</a>) or via the <a href='#namespace_array_method'>array</a> method
+on <a href='#namespace_values'>namespaces</a>:</p>
 
 <blockquote><code>empty=() /* empty array */ single=(10 ..) /* one element */
 double=(5, 10) /* two */<br>
@@ -567,10 +571,11 @@ programming environments.</p>
 
 <tr><th>Method</th><th>Description</th></tr>
 
-<tr><td><code>array(</code><i>elements</i><code>)</code>,
+<tr><td id='namespace_array_method'><code>array(</code><i>elements</i><code>)</code>,
     <code>*(</code><i>elements</i><code>)</code></td>
     <td>Returns an anonymous array (see <a href='#array_values'>array
-    values</a>)</td></tr>
+    values</a>, <a href='#assignment_syntax'>assignments</a>, and
+    the <a href='#namespace_var_method'>var</a> method)</td></tr>
 
 <tr><td><code>false</code></td><td>Returns the boolean false value</td></tr>
 
@@ -612,7 +617,7 @@ programming environments.</p>
 <tr><td><code>use(</code><i>name</i><code>)</code></td>
     <td>Calls the template loader to load resource <i>name</i></td></tr>
 
-<tr><td id='namespaces_var_method'><code>var(</code><i>name_1</i><code>,</code> ...<code>,</code>
+<tr><td id='namespace_var_method'><code>var(</code><i>name_1</i><code>,</code> ...<code>,</code>
     <i>name_N</i> <code>..</code> <i>set_1</i><code>,</code>
     <i>value_1</i><code>,</code> ...<code>,</code> <i>set_N</i><code>,</code>
     <i>value_N</i><code>)</code></td>
@@ -673,9 +678,9 @@ for the nil value as follows:</p>
     integer</td></tr>
 
 <tr><td><code>flt, float</code></td><td>Returns the number as a
-    floating-point number</td></tr>
+    floating-point (decimal) number</td></tr>
 
-<tr><td><code>int</code></td><td>Returns the number as an integer</td></tr>
+<tr><td><code>int</code></td><td>Returns the integer portion of the number</td></tr>
 
 <tr><td><code>str</code>, <code>string</code></td>
     <td>Returns the number as a string</td></tr>

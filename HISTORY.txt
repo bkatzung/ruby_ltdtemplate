@@ -1,5 +1,5 @@
 2013-07-13 Version 0.1.3
-	Minor edits to TEMPLATE_MANUAL.html.
+	Fix broken links and otherwise add some polish to TEMPLATE_MANUAL.html.
 
 2013-07-13 Version 0.1.2
 	Added .yardopts to gemspec. Still trying to get the hang of Ruby
