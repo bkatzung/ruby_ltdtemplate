@@ -160,7 +160,7 @@ Ruby double-quoted strings. Here is the full list:</p>
 
 <tr><td>\n</td><td>new-line/line-feed (ASCII LF)</td></tr>
 
-<tr><td>\r</td><td>carriage return (ASCII ESC)</td></tr>
+<tr><td>\r</td><td>carriage return (ASCII CR)</td></tr>
 
 <tr><td>\s</td><td>space (ASCII SP)</td></tr>
 
@@ -749,6 +749,9 @@ for the nil value as follows:</p>
 <tr><td><code>flt</code>, <code>float</code></td>
     <td>Returns the floating-point value of the string</td></tr>
 
+<tr><td><code>html</code></td>
+    <td>Returns the HTML encoding of the string</td></tr>
+
 <tr><td><code>idx(</code><i>target</i><code>,
     </code><i>offset</i><code>)</code>,
     <code>index(</code><i>target</i><code>,
@@ -762,6 +765,10 @@ for the nil value as follows:</p>
 
 <tr><td><code>len</code>, <code>length</code></td>
     <td>Returns the length of the string</td></tr>
+
+<tr><td><code>pcte</code></td>
+    <td>Returns the "percent encoding" of the string
+    (for URI components)</td></tr>
 
 <tr><td><code>ridx(</code><i>string</i><code>,
     </code><i>offset</i><code>)</code>,

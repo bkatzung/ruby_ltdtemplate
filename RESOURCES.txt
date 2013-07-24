@@ -1,0 +1,28 @@
+Resource Usage/Limit Summary
+
+arrays
+    The total number of arrays created
+
+array_size
+    The size of the largest array
+
+call_depth
+    The current/maximum call depth
+
+calls
+    The total number of calls made
+
+iterations
+    The total number of loop iterations
+
+string_length
+    The combined total length of strings created
+
+subscript_depth
+    The maximum subsubscript depth
+
+subscripts
+    The total number of subscripts
+
+use
+    The total number of "$.use" calls

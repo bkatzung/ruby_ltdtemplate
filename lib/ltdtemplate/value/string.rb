@@ -23,8 +23,14 @@ class LtdTemplate::Value::String < LtdTemplate::Code
 	when nil, 'call', 'str', 'string' then self
 	when 'class' then @template.factory :string, 'String'
 	when 'flt', 'float' then @template.factory :number, @value.to_f
+	when 'html'
+	    require 'htmlentities'
+	    @template.factory :string, HTMLEntities.new(:html4).
+	      encode(@value, :basic, :named, :decimal)
 	when 'int' then @template.factory :number, @value.to_i
 	when 'len', 'length' then @template.factory :number, @value.length
+	when 'pcte' then @template.factory(:string,
+	  @value.gsub(/[^a-z0-9]/i) { |c| sprintf "%%%2x", c.ord })
 	when 'rng', 'range', 'slc', 'slice' then do_range_slice opts
 	when 'type' then @template.factory :string, 'string'
 	when '+' then do_add opts
