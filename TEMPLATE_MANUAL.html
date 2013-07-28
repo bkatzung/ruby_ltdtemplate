@@ -11,7 +11,7 @@ td:first-child, th:first-child { padding-left: 0.3em }
 </head>
 <body>
 <h1 id='top'>LtdTemplate Manual<br>
-<span style='font-size: smaller'>Version 0.1.3; July 13, 2013</span></h1>
+<span style='font-size: smaller'>Version 0.2.1; July 28, 2013</span></h1>
 
 <h2>Author(s)</h2>
 
@@ -431,17 +431,35 @@ matrix[0, 0] /* => 1 */ matrix['type] /* => identity */</code></blockquote>
 
 <tr><td><code>class</code></td><td>Returns the string "Array"</td></tr>
 
+<tr><td><code>each(</code><i>code_block</i><code>)</code></td>
+    <td>Executes <i>code_block</i><code>.each_seq(</code><i>index</i>,
+    <i>value</i><code>)</code> for each sequential index then
+    <i>code_block</i><code>.each_rnd(</code><i>key</i>,
+    <i>value</i><code>)</code> for each random-access key
+    and returns an array of results (since 0.2.1)</td></tr>
+
+<tr><td><code>each_rnd(</code><i>code_block</i><code>)</code></td>
+    <td>Executes <i>code_block</i><code>.each_rnd(</code><i>key</i>,
+    <i>value</i><code>)</code> for each random-access key
+    and returns an array of results (since 0.2.1)</td></tr>
+
+<tr><td><code>each_seq(</code><i>code_block</i><code>)</code></td>
+    <td>Executes <i>code_block</i><code>.each_seq(</code><i>index</i>,
+    <i>value</i><code>)</code> for each sequential index
+    and returns an array of results (since 0.2.1)</td></tr>
+
 <tr><td><code>join</code></td><td>Joins sequential (positional)
     elements</td></tr>
 
 <tr><td><code>join(</code><i>separator</i><code>)</code></td><td>Join with
-    <i>separator</i> between elements</td></tr>
+    <i>separator</i> between sequential (positional) elements</td></tr>
 
 <tr><td><code>join(</code><i>two</i><code>, </code><i>first</i><code>,
     </code><i>middle</i><code>, </code><i>last</i><code>)</code></td>
-    <td>Joins two elements with <i>two</i> as the separator or more than two
-    elements with <i>first</i> as the first separator, <i>last</i> as the
-    last separator, and <i>middle</i> for all other separators</td></tr>
+    <td>Joins two sequential elements with <i>two</i> as the separator or
+    more than two sequential elements with <i>first</i> as the first
+    separator, <i>last</i> as the last separator, and <i>middle</i> for
+    all other separators</td></tr>
 
 <tr><td><code>pop</code>, <code>-&gt;</code></td><td>Pop the last sequential
     element</td></tr>
@@ -469,6 +487,14 @@ matrix[0, 0] /* => 1 */ matrix['type] /* => identity */</code></blockquote>
     <code>&lt;+(</code><i>list</i><code>)</code></td>
     <td>Adds zero or more elements in the <i>list</i> to the beginning of
     the array</td></tr>
+
+<tr><td><code>/</code></td><td>Interpolate the sequential and random-access
+    values of the array into the positional and named parameters of another
+    method call (since 0.2.1)</td></tr>
+
+<tr><td><code>%</code></td>
+    <td>Interpolate pairs of sequential values in the array as named
+    parameters of another method call (since 0.2.1)</td></tr>
 
 </table>
 

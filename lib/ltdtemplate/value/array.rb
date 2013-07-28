@@ -45,13 +45,21 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     end
 
     def to_boolean; true; end
-    def to_native; @sarah.seq.map { |val| val.to_native }; end
+    def to_native
+	if @sarah.rnd_size == 0 then native = []
+	elsif @sarah.seq_size == 0 then native = {}
+	else native = Sarah.new
+	end
+	@sarah.each { |key, val| native[key] = val.to_native }
+	native
+    end
     def to_text; @sarah.seq.map { |val| val.to_text }.join ''; end
 
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call' then self
 	when 'class' then @template.factory :string, 'Array'
+	when 'each', 'each_rnd', 'each_seq' then do_each opts
 	when 'join' then do_join opts
 	when 'pop', '->' then do_pop opts
 	when 'push', '+>' then do_push opts
@@ -61,6 +69,8 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
 	when 'size' then @template.factory :number, @sarah.size
 	when 'type' then @template.factory :string, 'array'
 	when 'unshift', '<+' then do_unshift opts
+	when '/' then @template.factory :parameters, @sarah.seq, @sarah.rnd
+	when '%' then @template.factory :parameters, [], @sarah.seq
 	else do_method opts, 'Array'
 	end
     end
@@ -108,6 +118,35 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
 	clear
 	data.each { |key, val| set_item key, map_native_value(val) }
 	self
+    end
+
+    #
+    # Loop over each key, value
+    #
+    def do_each (opts)
+	results = @template.factory :array
+	if params = opts[:parameters] and params.positional.size > 0
+	    body = params.positional[0]
+	    if opts[:method] != 'each_rnd'
+		@sarah.seq.each_index do |idx|
+		    @template.use :iterations
+		    body_params = @template.factory :parameters,
+		      [@template.factory(:number, idx), @sarah.seq[idx]]
+		    results.sarah.push body.get_value(:method => 'each_seq',
+		      :parameters => body_params)
+		end
+	    end
+	    if opts[:method] != 'each_seq'
+		@sarah.rnd.each do |key, val|
+		    @template.use :iterations
+		    body_params = @template.factory :parameters,
+		      [map_native_value(key), val]
+		    results.sarah.push body.get_value(:method => 'each_rnd',
+		      :parameters => body_params)
+		end
+	    end
+	end
+	results
     end
 
     #

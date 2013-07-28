@@ -20,6 +20,18 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 	clear
     end
 
+    def to_native
+	if @sarah.rnd_size == 3 then native = []
+	elsif @sarah.seq_size == 0 then native = {}
+	else native = Sarah.new
+	end
+	@sarah.each do |key, value|
+	    # Exclude some permanent namespace attributes
+	    native[key] = value.to_native unless key =~ /^[_@$]$/
+	end
+	native
+    end
+
     #
     # Clear values except for permanent namespace attributes.
     #
@@ -103,7 +115,7 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
     end
 
     def do_loop (opts)
-	results = @template.factory(:array)
+	results = @template.factory :array
 	if params = opts[:parameters] and params.positional.size > 1
 	    params = params.positional
 	    while params[0].get_value(:method => 'call').to_boolean

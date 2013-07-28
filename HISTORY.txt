@@ -1,3 +1,17 @@
+2013-07-28 Version 0.2.1
+	Added array.{each,each_rnd,each_seq} methods (executing the code
+	block supplied as the first parameter with parameters key and
+	value).
+
+	Added array/ and array% methods for parameter interpolation with
+	supporting changes to ::Code::Parameters.
+
+	Namespace and array to_native methods now dynamically return
+	an array, hash, or Sarah as required for the data.
+
+2013-07-24 Version 0.1.5
+	Added RESOURCES.txt to .yardopts. OOPS!
+
 2013-07-24 Version 0.1.4
 	Added String.html (HTML encoding) and String.pcte (percent encoding)
 	methods. Added RESOURCES.txt describing resource usage/limits.
