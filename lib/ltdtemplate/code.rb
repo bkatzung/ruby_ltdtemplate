@@ -1,10 +1,10 @@
-class LtdTemplate; end
-
 # LtdTemplate::Code - Base class for LtdTemplate code/value objects
 #
 # @author Brian Katzung <briank@kappacs.com>, Kappa Computer Solutions, LLC
 # @copyright 2013 Brian Katzung and Kappa Computer Solutions, LLC
 # @license MIT License
+
+class LtdTemplate; end
 
 class LtdTemplate::Code
 
@@ -38,8 +38,7 @@ class LtdTemplate::Code
     # @param key [String] The (native) string for the method.
     # @return [LtdTemplate::Value::Code_Block]
     def get_item (key)
-	(@tpl_methods.has_key? key) ? @tpl_methods[key] :
-	  @template.factory(:nil)
+	(@tpl_methods.has_key? key) ? @tpl_methods[key] : @template.nil
     end
 
     # Set a non-array value's method code block.
@@ -72,7 +71,7 @@ class LtdTemplate::Code
 	if params = opts[:parameters]
 	    set_value(params.scalar? ? params.positional[0] : params)
 	end
-	@template.factory :nil
+	@template.nil
     end
 
     # Try to execute code-block methods bound to the object or object
@@ -91,8 +90,10 @@ class LtdTemplate::Code
 	if method
 	    opts[:target] = self
 	    method.get_value opts
+	elsif mmproc = @template.options[:missing_method]
+	    mmproc.call(@template, self, opts) || @template.nil
 	else
-	    @template.factory :nil
+	    @template.nil
 	end
     end
 

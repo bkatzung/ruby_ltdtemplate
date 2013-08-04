@@ -37,6 +37,9 @@ class LtdTemplate::Value::Boolean < LtdTemplate::Code
 	end
     end
 
+    # Type (for :missing_method callback)
+    def type; :boolean; end
+
     # Implement +/| (or):
     # bool|(bool1, ..., boolN)
     # True if ANY boolean is true. Evaluates {} blocks until true.

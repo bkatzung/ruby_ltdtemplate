@@ -37,7 +37,7 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     #
     def has_item? (key); @sarah.has_key? key; end
     def get_item (key)
-	@sarah.has_key?(key) ? @sarah[key] : @template.factory(:nil)
+	@sarah.has_key?(key) ? @sarah[key] : @template.nil
     end
     def set_item (key, value)
 	@sarah[key] = value
@@ -74,6 +74,9 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
 	else do_method opts, 'Array'
 	end
     end
+
+    # Type (for :missing_method callback)
+    def type; :array; end
 
     #
     # Scalar assignment is used instead of array assignment if the
@@ -175,21 +178,21 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
     end
 
     def do_pop (opts)
-	@sarah.pop || @template.factory(:nil)
+	@sarah.pop || @template.nil
     end
 
     def do_push (opts)
 	if params = opts[:parameters] then @sarah.append! params.sarah end
-	@template.factory :nil
+	@template.nil
     end
 
     def do_shift (opts)
-	@sarah.shift || @template.factory(:nil)
+	@sarah.shift || @template.nil
     end
 
     def do_unshift (opts)
 	if params = opts[:parameters] then @sarah.insert! params.sarah end
-	@template.factory :nil
+	@template.nil
     end
 
     protected
@@ -201,7 +204,7 @@ class LtdTemplate::Value::Array < LtdTemplate::Code
 	  value.is_a? Array
 	return @template.factory(:array).set_from_hash value if
 	  value.is_a? Hash
-	@template.factory :nil
+	@template.nil
     end
 
 end

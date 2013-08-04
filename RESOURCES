@@ -15,6 +15,10 @@ calls
 iterations
     The total number of loop iterations
 
+regexp (limit)
+    A string may only be converted to a regexp if limit regexp
+    is set to false before rendering
+
 string_length
     The combined total length of strings created
 

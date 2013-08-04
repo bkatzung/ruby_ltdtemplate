@@ -8,6 +8,8 @@
 
 class LtdTemplate
 
+    VERSION = '0.2.3'
+
     TOKEN_MAP = {
 	?. => :dot,		# method separator
 	'..' => :dotdot,	# begin named values
@@ -93,14 +95,16 @@ class LtdTemplate
 	@@classes.merge! classes
     end
 
+    # Constructor
+    #
+    # @param options [Hash] Options hash
+    # @option options [Proc] :loader Callback for $.use method
+    # @option options [Proc] :missing_method Callback for missing methods
     def initialize (options = {})
-	@classes = @@classes
-	@code = nil
-	@factory_singletons = {}
-	@limits = {}
-	@namespace = nil
+	@classes, @factory_singletons = {}, {}
+	@code, @namespace = nil, nil
+	@limits, @usage = {}, {}
 	@options = options
-	@usage = {}
 	@used = {}
     end
 
@@ -141,7 +145,7 @@ class LtdTemplate
 	self
     end
 
-    # Change default factory classes for this template.
+    # Override default factory classes for this template instance.
     #
     # @param classes [Hash] A hash of factory symbols and corresponding
     #   classes to be instantiated.
@@ -159,11 +163,18 @@ class LtdTemplate
     # @return Returns the new code/value object.
     def factory (type, *args)
 	use :factory
-	type = @classes[type]
-	file = type.downcase.gsub '::', '/'
-	require file
-	eval(type).instance(self, *args)
+	type = @classes[type] || @@classes[type]
+	if type.is_a? String
+	    file = type.downcase.gsub '::', File::SEPARATOR
+	    require file
+	    eval(type).instance(self, *args)
+	else
+	    type.instance(self, *args)
+	end
     end
+
+    # Shortcut for frequently used template factory :nil
+    def nil; @factory_singletons[:nil] || factory(:nil); end
 
     # Render the template.
     #

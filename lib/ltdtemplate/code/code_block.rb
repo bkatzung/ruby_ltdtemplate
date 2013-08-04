@@ -21,7 +21,7 @@ class LtdTemplate::Code::Code_Block < LtdTemplate::Code
     def get_value (opts = {})
 	values = @code.map { |part| part.get_value }.flatten
 	case values.size
-	when 0 then @template.factory :nil
+	when 0 then @template.nil
 	when 1 then values[0]
 	else @template.factory(:array).set_value(values)
 	end

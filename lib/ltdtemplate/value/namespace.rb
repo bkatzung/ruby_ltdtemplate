@@ -72,8 +72,8 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 	when 'if' then do_if opts
 	when 'loop' then do_loop opts
 	when 'method' then method_string
-	when 'nil' then @template.factory :nil
-	when 'target' then @target || @template.factory(:nil)
+	when 'nil' then @template.nil
+	when 'target' then @target || @template.nil
 	when 'true' then @template.factory :boolean, true
 	when 'use' then do_use opts
 	when 'var' then do_add_names opts
@@ -81,18 +81,21 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 	end
     end
 
+    # Type (for :missing_method callback)
+    def type; :namespace; end
+
     # Add new namespace names with nil or specific values
     #
     def do_add_names (opts)
 	params = opts[:parameters]
 	if params.positional.size
-	    tnil = @template.factory :nil
+	    tnil = @template.nil
 	    params.positional.each { |item| set_item(item.to_native, tnil) }
 	end
 	if params.named.size
 	    params.named.each { |item, val| set_item(item, val) }
 	end
-	@template.factory :nil
+	@template.nil
     end
 
     # Implement conditionals
@@ -111,7 +114,7 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 		return e2.get_value(:method => 'call') if e1.to_boolean
 	    end
 	end
-	@template.factory :nil
+	@template.nil
     end
 
     def do_loop (opts)
@@ -141,7 +144,7 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 		  result.kind_of? String
 	    end
 	end
-	tpl.factory :nil
+	tpl.nil
     end
 
 end

@@ -67,7 +67,7 @@ class LtdTemplate::Code::Variable < LtdTemplate::Code
 	case opts[:method]
 	when '=' then do_set opts	# see LtdTemplate::Code
 	when '?='
-	    if is_set? then @template.factory :nil
+	    if is_set? then @template.nil
 	    else do_set opts
 	    end
 	else target.get_value opts

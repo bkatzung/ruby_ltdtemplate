@@ -1,4 +1,32 @@
+2013-08-04 Version 0.2.3
+
+	Documented LtdTemplate constructor options, including the new
+	:missing_method option to supply a callback for missing method
+	calls (an alternative to subclassing LtdTemplate::Value classes).
+	Fixed implementation of class and instance set_classes methods
+	(which can now also accept a loaded class constant as an
+	alternative to a class name string).
+
+	LtdTemplate value classes now have a "type" method that returns
+	an associated symbol (e.g., :nil, :number, :string) for use by
+	the :missing_method callback.
+
+	Added test cases for $.use, the :missing_method callback, and
+	class and instance set_classes methods.
+
+2013-07-29 Version 0.2.2
+
+	Added string methods capcase, downcase, join, regexp,
+	rep/replace, rep1/replace1, split, and upcase.
+
+	Added regexp special object and methods ci/ignorecase,
+	ext/extended, and multi/multiline.
+
+	Renamed HISTORY.txt to CHANGELOG to conform to best practices;
+	also renamed RESOURCES.txt to RESOURCES.
+
 2013-07-28 Version 0.2.1
+
 	Added array.{each,each_rnd,each_seq} methods (executing the code
 	block supplied as the first parameter with parameters key and
 	value).
@@ -10,23 +38,29 @@
 	an array, hash, or Sarah as required for the data.
 
 2013-07-24 Version 0.1.5
+
 	Added RESOURCES.txt to .yardopts. OOPS!
 
 2013-07-24 Version 0.1.4
+
 	Added String.html (HTML encoding) and String.pcte (percent encoding)
 	methods. Added RESOURCES.txt describing resource usage/limits.
 
 2013-07-13 Version 0.1.3
+
 	Fix broken links and otherwise add some polish to TEMPLATE_MANUAL.html.
 
 2013-07-13 Version 0.1.2
+
 	Added .yardopts to gemspec. Still trying to get the hang of Ruby
 	packaging.
 
 2013-07-12 Version 0.1.1
+
 	Added Gemfile
 
 2013-07-12 Version 0.1.0
+
 	Fixed class names in unit tests.
 	String.* now handles multipliers <= 0.
 	Added number.abs (absolute value) method.
@@ -40,4 +74,5 @@
 	Added the template manual (TEMPLATE_MANUAL.html).
 
 2013-07-08 Version 0.0.1
+
 	First release

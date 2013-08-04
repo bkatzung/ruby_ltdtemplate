@@ -21,25 +21,35 @@ class LtdTemplate::Value::String < LtdTemplate::Code
     def get_value (opts = {})
 	case opts[:method]
 	when nil, 'call', 'str', 'string' then self
+	when 'capcase' then @template.factory :string, @value.capitalize
 	when 'class' then @template.factory :string, 'String'
+	when 'downcase' then @template.factory :string, @value.downcase
 	when 'flt', 'float' then @template.factory :number, @value.to_f
 	when 'html'
 	    require 'htmlentities'
 	    @template.factory :string, HTMLEntities.new(:html4).
 	      encode(@value, :basic, :named, :decimal)
+	when 'idx', 'index', 'ridx', 'rindex' then do_index opts
 	when 'int' then @template.factory :number, @value.to_i
+	when 'join' then do_join opts
 	when 'len', 'length' then @template.factory :number, @value.length
 	when 'pcte' then @template.factory(:string,
 	  @value.gsub(/[^a-z0-9]/i) { |c| sprintf "%%%2x", c.ord })
+	when 'regexp' then do_regexp opts
+	when 'rep', 'rep1', 'replace', 'replace1' then do_replace opts
 	when 'rng', 'range', 'slc', 'slice' then do_range_slice opts
+	when 'split' then do_split opts
 	when 'type' then @template.factory :string, 'string'
+	when 'upcase' then @template.factory :string, @value.upcase
 	when '+' then do_add opts
 	when '*' then do_multiply opts
-	when 'idx', 'index', 'ridx', 'rindex' then do_index opts
 	when '<', '<=', '==', '!=', '>=', '>' then do_compare opts
 	else do_method opts, 'String'
 	end
     end
+
+    # Type (for :missing_method callback)
+    def type; :string; end
 
     def do_add (opts)
 	combined = @value
@@ -108,6 +118,18 @@ class LtdTemplate::Value::String < LtdTemplate::Code
 	end
     end
 
+    # String join
+    # str.join(list)
+    def do_join (opts)
+	params = params.positional if params = opts[:parameters]
+    	if params and params.size > 0
+	    @template.factory(:string, params.map do |val|
+	      val.get_value.to_text end.join(@value))
+	else
+	    @template.factory :string, ''
+	end
+    end
+
     # Range and slice:
     # str.range([begin[, end]])
     # str.slice([begin[, length]])
@@ -124,4 +146,70 @@ class LtdTemplate::Value::String < LtdTemplate::Code
 	@template.factory :string, (str || '')
     end
 
+    # Convert to regexp string
+    def do_regexp (opts)
+	(@template.limits[:regexp] != false) ? self :
+	(LtdTemplate::Value::Regexp.new @template, @value)
+    end
+
+    # Replace and replace one
+    # str.replace(pattern, replacement)
+    # str.replace1(pattern, replacement)
+    def do_replace (opts)
+	params = params.positional if params = opts[:parameters]
+	if params.size > 1
+	    pat = params[0].get_value
+	    pat = pat.respond_to?(:to_regexp) ? pat.to_regexp : pat.to_native
+	    repl = params[1].get_value.to_native
+	    if opts[:method][-1] == '1'
+		# replace one
+		@template.factory :string, @value.sub(pat, repl)
+	    else
+		# replace all
+		@template.factory :string, @value.gsub(pat, repl)
+	    end
+	else
+	    self
+	end
+    end
+
+    # Split
+    # str.split(pattern[, limit])
+    def do_split (opts)
+	split_opts = []
+	params = params.positional if params = opts[:parameters]
+	if params.size > 0
+	    pattern = params[0].get_value
+	    split_opts << ((pattern.respond_to? :to_regexp) ?
+	      pattern.to_regexp : pattern.to_native)
+	    split_opts << params[1].get_value.to_native if params.size > 1
+	end
+	@template.factory(:array).set_from_array @value.split(*split_opts)
+    end
+
 end
+
+class LtdTemplate::Value::Regexp < LtdTemplate::Value::String
+
+    def initialize (template, value)
+	super template, value
+	@options = 0
+    end
+
+    def to_regexp
+	@regexp ||= Regexp.new @value, @options
+    end
+
+    def get_value (opts = {})
+	case opts[:method]
+	when 'ci', 'ignorecase' then @options |= Regexp::IGNORECASE; self
+	when 'ext', 'extended' then @options |= Regexp::EXTENDED; self
+	when 'multi', 'multiline' then @options |= Regexp::MULTILINE; self
+	when 'type' then @template.factory :string, 'regexp'
+	else super
+	end
+    end
+
+end
+
+# END

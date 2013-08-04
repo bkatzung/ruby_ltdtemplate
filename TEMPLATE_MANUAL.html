@@ -11,7 +11,7 @@ td:first-child, th:first-child { padding-left: 0.3em }
 </head>
 <body>
 <h1 id='top'>LtdTemplate Manual<br>
-<span style='font-size: smaller'>Version 0.2.1; July 28, 2013</span></h1>
+<span style='font-size: smaller'>Version 0.2.2; July 29, 2013</span></h1>
 
 <h2>Author(s)</h2>
 
@@ -404,6 +404,7 @@ $.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
 <li><a href='#nil_value'>Nil</a></li>
 <li><a href='#number_values'>Numbers</a></li>
 <li><a href='#string_values'>Strings</a></li>
+<li><a href='#regexp_values'>Regular Expressions</a></li>
 </ul>
 
 <h3 id='array_values'>Arrays</h3>
@@ -758,6 +759,13 @@ for the nil value as follows:</p>
 
 </table>
 
+<p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
+all numeric values as follows:</p>
+
+<blockquote><code>@Number?=(')
+@Number['</code><i>method_name</i><code>]=({</code>
+<i>code sequence</i> <code>})</code></blockquote>
+
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
 
 <h3 id='string_values'>Strings</h3>
@@ -772,11 +780,18 @@ for the nil value as follows:</p>
 
 <tr><td><code>class</code></td><td>Returns the string "String"</td></tr>
 
+<tr><td><code>capcase</code></td>
+    <td>Returns the string with each space-separated word capitalized
+    (since 0.2.2)</td></tr>
+
+<tr><td><code>downcase</code></td>
+    <td>Returns the string entirely in lowercase (since 0.2.2)</td></tr>
+
 <tr><td><code>flt</code>, <code>float</code></td>
     <td>Returns the floating-point value of the string</td></tr>
 
 <tr><td><code>html</code></td>
-    <td>Returns the HTML encoding of the string</td></tr>
+    <td>Returns the HTML encoding of the string (since 0.1.4)</td></tr>
 
 <tr><td><code>idx(</code><i>target</i><code>,
     </code><i>offset</i><code>)</code>,
@@ -789,12 +804,38 @@ for the nil value as follows:</p>
 <tr><td><code>int</code></td>
     <td>Returns the integer value of the string</td></tr>
 
+<tr><td><code>join(</code><i>list</i><code>)</code></td>
+    <td>Equivalent to
+    <code>$.array(<i>list</i><code>).join(</code><i>string</i><code>)</code>
+    (since 0.2.2)</td></tr>
+
 <tr><td><code>len</code>, <code>length</code></td>
     <td>Returns the length of the string</td></tr>
 
 <tr><td><code>pcte</code></td>
     <td>Returns the "percent encoding" of the string
-    (for URI components)</td></tr>
+    (for URI components; since 0.1.4)</td></tr>
+
+<tr><td><code>regexp</code></td>
+    <td>Returns a "<a href='#regexp_values'>regular expression</a>"
+    version of the string (only if enabled by the calling program;
+    since 0.2.2)</td></tr>
+
+<tr><td><code>rep(</code><i>pattern</i><code>,</code>
+    <i>replacement</i><code>)</code>, 
+    <code>replace(</code><i>pattern</i><code>,</code>
+    <i>replacement</i><code>)</code></td>
+    <td>Returns a copy of the string with all occurrences of <i>pattern</i>
+    replaced with <i>replacement</i>; the <i>pattern</i> may be a
+    <a href='#regexp_values'>regular expression</a> (since 0.2.2)</td></tr>
+
+<tr><td><code>rep1, replace1</code></td>
+    <td>Like <code>rep</code>/<code>replace</code>, but with only the
+    first occurrence replaced (since 0.2.2)</td></tr>
+
+<tr><td><code>split(</code><i>pattern</i>, <i>limit</i><code>)</code></td>
+    <td>Returns an array of up to <i>limit</i> (default unlimited)
+    substrings split at <i>pattern</i> (since 0.2.2)</td></tr>
 
 <tr><td><code>ridx(</code><i>string</i><code>,
     </code><i>offset</i><code>)</code>,
@@ -826,6 +867,9 @@ for the nil value as follows:</p>
 
 <tr><td><code>type</code></td><td>Returns the string "string"</td></tr>
 
+<tr><td><code>upcase</code></td>
+    <td>Returns the string entirely in uppercase</td></tr>
+
 <tr><td><code>+(</code><i>list</i><code>)</code></td>
     <td>Returns the concatenation of the string and the items in
     <i>list</i></td></tr>
@@ -845,6 +889,48 @@ for the nil value as follows:</p>
     is used.</td></tr>
 
 </table>
+
+<p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
+all string values as follows:</p>
+
+<blockquote><code>@String?=(')
+@String['</code><i>method_name</i><code>]=({</code>
+<i>code sequence</i> <code>})</code></blockquote>
+
+<p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
+
+<h3 id='regexp_values'>Regular Expressions</h3>
+
+<p>"<a href='http://en.wikipedia.org/wiki/Regular_expression'>Regular
+expressions</a>" ("regex" or "regexp" for short) in LtdTemplate are
+specially enhanced, "magic strings". They behave like regular strings
+unless used in a method call that is able to use them as a regular
+expression.</p>
+
+<p>Regular expressions must be enabled by the calling program. See
+the gem documentation for details.</p>
+
+<p>Regexp-specific methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>ci, ignorecase</code></td>
+    <td>Make pattern case-insensitive</td></tr>
+
+<tr><td><code>ext, extended</code></td>
+     <td>Allow white space and comments in the pattern</td></tr>
+
+<tr><td><code>multi, multiline</code></td>
+    <td>Makes <code>.</code> match newlines too</td></tr>
+
+<tr><td><code>type</code></td><td>Returns the string "regexp"</td></tr>
+
+</table>
+
+<blockquote><code>"Example".replace("[aeiou]".regexp.ci,'_)
+/* => _x_mpl_ */</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
 

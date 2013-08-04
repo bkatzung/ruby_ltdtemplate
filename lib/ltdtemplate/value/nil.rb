@@ -20,6 +20,9 @@ class LtdTemplate::Value::Nil < LtdTemplate::Code
 	end
     end
 
+    # Type (for :missing_method callback)
+    def type; :nil; end
+
     def to_boolean; false; end
     def to_native; ''; end
     def to_text; ''; end

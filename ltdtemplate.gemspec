@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name         = "ltdtemplate"
-  s.version      = "0.2.1"
-  s.date         = "2013-07-28"
+  s.version      = "0.2.3"
+  s.date         = "2013-08-04"
   s.authors      = ["Brian Katzung"]
   s.email        = ["briank@kappacs.com"]
   s.homepage     = "http://rubygems.org/gems/ltdtemplate"
@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.license      = "MIT"
  
   s.files        = Dir.glob("lib/**/*") +
-      %w{ltdtemplate.gemspec Gemfile .yardopts HISTORY.txt RESOURCES.txt
+      %w{ltdtemplate.gemspec Gemfile .yardopts CHANGELOG RESOURCES
       TEMPLATE_MANUAL.html}
   s.test_files   = Dir.glob("test/**/[0-9]*.rb")
   s.require_path = 'lib'

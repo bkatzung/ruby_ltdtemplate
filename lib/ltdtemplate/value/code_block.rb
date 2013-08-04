@@ -37,4 +37,7 @@ class LtdTemplate::Value::Code_Block < LtdTemplate::Code
 	end
     end
 
+    # Type (for :missing_method callback)
+    def type; :code_block; end
+
 end

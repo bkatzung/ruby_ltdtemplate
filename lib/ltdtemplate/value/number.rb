@@ -45,6 +45,9 @@ class LtdTemplate::Value::Number < LtdTemplate::Code
 	end
     end
 
+    # Type (for :missing_method callback)
+    def type; :number; end
+
     # Implement sequential operations (+, *, /, %, &, |, ^)
     def do_sequential (opts = {}, &block)
 	if params = opts[:parameters]
