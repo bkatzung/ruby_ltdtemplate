@@ -1,0 +1,10 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    sarah (0.0.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  sarah (~> 0.0.2)
