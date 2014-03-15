@@ -56,7 +56,7 @@ class LtdTemplate::Code::Parameters < LtdTemplate::Code
 	    end
 	    scalar = false
 	else
-	    scalar = positional.size == 1 and !named.empty?
+	    scalar = (positional.size == 1) && named.empty?
 	end
 
 	array = @template.factory(:array).set_value(positional, named, scalar)

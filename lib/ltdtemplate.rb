@@ -8,7 +8,7 @@
 
 class LtdTemplate
 
-    VERSION = '0.2.3'
+    VERSION = '0.2.4'
 
     TOKEN_MAP = {
 	?. => :dot,		# method separator

@@ -1,3 +1,7 @@
+2014-03-15 Version 0.2.4
+
+	Fixed a bug in the parameter scalar assignment determination.
+
 2013-08-04 Version 0.2.3
 
 	Documented LtdTemplate constructor options, including the new
