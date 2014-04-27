@@ -20,6 +20,9 @@ regexp (limit)
     is set to false before rendering
 
 string_length
+    The length of the longest string
+
+string_total
     The combined total length of strings created
 
 subscript_depth

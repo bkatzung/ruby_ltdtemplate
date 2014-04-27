@@ -27,7 +27,7 @@ class TestLtdTemplate_08 < MiniTest::Unit::TestCase
 c=('c, 'c, 'x, 'c, 'y, 'c) d=(1, a/, 4, b/, 7, c%, 8 .. 'd, 'd, 'y, 'd) >>
 TPL
 	@tpl.render
-	d = @tpl.namespace.get_item(?d).to_native
+	d = @tpl.namespace[?d]
 	assert_equal [1, 2, 3, 4, 5, 6, 7, 8], d.seq, "d (sequential)"
 	assert_equal({ ?a => ?a, ?b => ?b, ?c => ?c, ?d => ?d,
 	  ?x => ?c, ?y => ?d }, d.rnd, "d (random-access)")

@@ -1,11 +1,12 @@
 # LtdTemplate::Code::Subscript - Represents an array subscript in
 #	an LtdTemplate
 #
-# Author:: Brian Katzung <briank@kappacs.com>, Kappa Computer Solutions, LLC
-# Copyright:: 2013 Brian Katzung and Kappa Computer Solutions, LLC
-# License:: MIT License
+# @author Brian Katzung <briank@kappacs.com>, Kappa Computer Solutions, LLC
+# @copyright 2013-2014 Brian Katzung and Kappa Computer Solutions, LLC
+# @license MIT License
 
 require 'ltdtemplate/code'
+require 'ltdtemplate/value/array_splat'
 
 class LtdTemplate::Code::Subscript < LtdTemplate::Code
 
@@ -15,67 +16,71 @@ class LtdTemplate::Code::Subscript < LtdTemplate::Code
     end
 
     #
-    # Return native subscripts calculated from the supplied code blocks.
+    # Evaluate the target's value.
     #
-    def native_subs (usage = false)
-	nsubs = @subscripts ?
-	  @subscripts.map { |sub| sub.get_value.to_native }.flatten : []
-	num_subs = nsubs.size
-	if usage and num_subs > 0
-	    @template.using :subscript_depth, num_subs
-	    @template.use :subscripts, num_subs
+    def evaluate (opts = {})
+	case opts[:method]
+	when '=', '?=' then do_set opts # Support array assignment
+	else rubyversed(target(true)).evaluate opts
 	end
-	nsubs
     end
+
+    #
+    # Return subscripts calculated from the supplied code blocks.
+    #
+    def evaluate_subscripts (usage = false)
+	subscripts = []
+	@subscripts.each do |code|
+	    subscript = rubyversed(code).evaluate
+	    case subscript
+	    when LtdTemplate::Value::Array_Splat
+		subscripts.concat subscript.positional
+	    when Numeric, String then subscripts << subscript
+	    end
+	end
+
+	if usage
+	    @template.using :subscript_depth, subscripts.size
+	    @template.use :subscripts, subscripts.size
+	end
+
+	subscripts
+    end
+
+    # Subscripted variables are assignable, so defer evaluating
+    # the receiver.
+    def receiver; self; end
 
     #
     # Return the target value, variable[sub1, ..., subN]
     #
     def target (usage = false)
-	current = @base.get_value
-	native_subs(usage).each { |subs| current = current.get_item subs }
-	current
+	subscripts = evaluate_subscripts usage
+	if subscripts.empty? then rubyversed(@base).evaluate
+	else rubyversed(@base).evaluate.in_rubyverse(@template)[*subscripts, {}]
+	end
     end
 
-    #
-    # Implement the subscript interface for the target.
-    #
-    def has_item? (key); target.has_item? key; end
-    def get_item (key); target.get_item key; end
-    def set_item (key, value); target(true).set_item key, value; end
+    ##################################################
 
-    #
-    # Set the target's value.
-    #
-    def set_value (value)
-	subs = native_subs true
-	if subs.size == 0
-	    # If there are no subscripts, just use the base.
-	    @base.set_value value
-	else
-	    #
-	    # Traverse all but the last subscript, trying to autovivicate
-	    # new arrays as we go. This will silently fail if there is an
-	    # existing non-array value somewhere.
-	    #
-	    current = @base
-	    current.set_value @template.factory :array unless current.is_set?
-	    subs[0..-2].each do |sub|
-		if !current.has_item? sub
-		    current.set_item sub, @template.factory(:array)
-		end
-		current = current.get_item sub
-	    end
-	    current.set_item subs[-1], value
+    # Implement = and ?=
+    def do_set (opts)
+	subscripts = evaluate_subscripts true
+	if subscripts.empty?
+	    # Treat expression[] as expression
+	    rubyversed(@base).evaluate opts
+	elsif opts[:method] != '?=' ||
+	  rubyversed(@base).evaluate.in_rubyverse(@template)[*subscripts,
+	  {}].nil?
+	    # Assign if unconditional or unset
+	    params = opts[:parameters]
+	    params = params[0] if params.is_a? LtdTemplate::Univalue
+	    rubyversed(@base).evaluate.in_rubyverse(@template)[*subscripts,
+	      {}] = params
 	end
-	self
-    end
-
-    def get_value (opts = {})
-	case opts[:method]
-	when '=' then do_set opts	# see LtdTemplate::Code
-	else target.get_value opts
-	end
+	nil
     end
 
 end
+
+# END

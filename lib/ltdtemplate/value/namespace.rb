@@ -1,35 +1,28 @@
 # LtdTemplate::Value::Namespace - Represents an LtdTemplate variable namespace
 #
 # @author Brian Katzung <briank@kappacs.com>, Kappa Computer Solutions, LLC
-# @copyright 2013 Brian Katzung and Kappa Computer Solutions, LLC
+# @copyright 2013-2014 Brian Katzung and Kappa Computer Solutions, LLC
 # @license MIT License
 
-require 'ltdtemplate/value/array'
+require 'sarah'
+require 'xkeys'
+require 'ltdtemplate/value'
 
-class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
+class LtdTemplate::Value::Namespace < Sarah
 
-    attr_reader :method, :parameters, :parent, :root
+    include LtdTemplate::Value
+    include XKeys::Hash
+
+    attr_reader :tpl_method, :parameters, :parent, :root, :template
     attr_accessor :target
 
-    def initialize (template, method, parameters, parent = nil)
-	super template
-	@method, @parameters = method, parameters
+    def initialize (template, tpl_method, parameters, parent = nil)
+	@template = template
+	@tpl_method, @parameters = tpl_method, parameters
 	@root = parent ? parent.root : self
 	@parent = parent
 	@target = nil
-	clear
-    end
-
-    def to_native
-	if @sarah.rnd_size == 3 then native = []
-	elsif @sarah.seq_size == 0 then native = {}
-	else native = Sarah.new
-	end
-	@sarah.each do |key, value|
-	    # Exclude some permanent namespace attributes
-	    native[key] = value.to_native unless key =~ /^[_@$]$/
-	end
-	native
+	clear()
     end
 
     #
@@ -37,11 +30,31 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
     #
     def clear
 	super
-	@sarah.rnd['_'] = @parameters
-	@sarah.rnd['@'] = @root
-	@sarah.rnd['^'] = @parent if @parent
-	@sarah.rnd['$'] = self
+	self['_'] = @parameters
+	self['@'] = @root
+	self['^'] = @parent if @parent
+	self['$'] = self
 	self
+    end
+
+    def evaluate (opts = {})
+	case opts[:method]
+	when nil, 'call' then self
+	when 'array', '*' # anonymous array
+	    opts[:parameters] ? opts[:parameters] : @template.factory(:array)
+	when 'class' then 'Namespace'
+	when 'false' then false
+	when 'if' then do_if opts
+	when 'loop' then do_loop opts
+	when 'method' then @tpl_method
+	when 'nil' then nil
+	when 'target' then @target
+	when 'true' then true
+	when 'type' then 'namespace'
+	when 'use' then do_use opts
+	when 'var' then do_add_names opts
+	else super opts
+	end
     end
 
     #
@@ -50,82 +63,59 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
     def find_item (name)
 	namespace = self
 	while namespace
-	    break if namespace.has_item? name
+	    break if namespace.has_key? name
 	    namespace = namespace.parent
 	end
 	namespace
     end
 
-    #
-    # Template string-value for method
-    #
-    def method_string
-	@method_string ||= @template.factory :string, @method
-    end
+    def tpl_text; ''; end
 
-    def get_value (opts = {})
-	case opts[:method]
-	when 'array', '*' # anonymous array
-	    opts[:parameters] ? opts[:parameters] :
-	      @template.factory(:parameters)
-	when 'false' then @template.factory :boolean, false
-	when 'if' then do_if opts
-	when 'loop' then do_loop opts
-	when 'method' then method_string
-	when 'nil' then @template.nil
-	when 'target' then @target || @template.nil
-	when 'true' then @template.factory :boolean, true
-	when 'use' then do_use opts
-	when 'var' then do_add_names opts
-	else super
-	end
-    end
+    def xkeys_new (*args); Sarah.new; end
 
-    # Type (for :missing_method callback)
-    def type; :namespace; end
+    ###################################################
 
     # Add new namespace names with nil or specific values
     #
     def do_add_names (opts)
-	params = opts[:parameters]
-	if params.positional.size
-	    tnil = @template.nil
-	    params.positional.each { |item| set_item(item.to_native, tnil) }
+	if params = opts[:parameters]
+	    params.each(:seq) { |idx, val| self[val] = nil }
+	    params.each(:nsq) { |key, val| self[key] = val }
 	end
-	if params.named.size
-	    params.named.each { |item, val| set_item(item, val) }
-	end
-	@template.nil
+	nil
     end
 
     # Implement conditionals
     def do_if (opts)
 	if params = opts[:parameters]
-	    params.positional.each_slice(2) do |e1, e2|
-		e1 = e1.get_value :method => 'call'
+	    params.values(:seq).each_slice(2) do |pair|
+		e1 = rubyversed(pair[0]).evaluate :method => 'call'
 
 		#
 		# Return the "else" value, e1, in the absence of
 		# a condition/result value pair.
 		#
-		return e1 unless e2
+		return e1 if pair.size == 1
 
 		# Return the e2 result if e1 evaluates to true
-		return e2.get_value(:method => 'call') if e1.to_boolean
+		if rubyversed(e1).tpl_boolean
+		    return rubyversed(pair[1]).evaluate :method => 'call'
+		end
 	    end
 	end
-	@template.nil
+	nil
     end
 
     def do_loop (opts)
 	results = @template.factory :array
-	if params = opts[:parameters] and params.positional.size > 1
-	    params = params.positional
-	    while params[0].get_value(:method => 'call').to_boolean
+	if (params = opts[:parameters]) && params.size(:seq) > 1
+	    while rubyversed(params[0]).evaluate(:method => 'call').
+	      in_rubyverse(@template).tpl_boolean
 		@template.use :iterations
-		results.sarah.push params[1].get_value(:method => 'call')
-		break if params[2] and
-		  !params[2].get_value(:method => 'call').to_boolean
+		results.push rubyversed(params[1]).evaluate :method => 'call'
+		break if params.size(:seq) > 2 && !rubyversed(params[2]).
+		  evaluate(:method => 'call').in_rubyverse(@template).
+		  tpl_boolean
 	    end
 	end
 	results
@@ -133,18 +123,20 @@ class LtdTemplate::Value::Namespace < LtdTemplate::Value::Array
 
     def do_use (opts)
 	tpl = @template
-	if loader = tpl.options[:loader] and
-	  params = opts[:parameters] and params.positional.size > 0
-	    name = params.positional[0].get_value.to_text
+	if (loader = tpl.options[:loader]) && (params = opts[:parameters]) &&
+	  params.size(:seq) > 0
+	    name = params[0]
 	    if !tpl.used[name]
 		tpl.use :use
 		tpl.used[name] = true
 		result = loader.call(tpl, name)
-		tpl.parse_template(tpl.get_tokens result).get_value if
+		tpl.parse_template(tpl.get_tokens result).evaluate if
 		  result.kind_of? String
 	    end
 	end
-	tpl.nil
+	nil
     end
 
 end
+
+# END

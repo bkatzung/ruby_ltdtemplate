@@ -2,13 +2,34 @@
 #
 # A template system with limitable resource usage.
 #
-# @author Brian Katzung <briank@kappacs.com>, Kappa Computer Solutions, LLC
-# @copyright 2013 Brian Katzung and Kappa Computer Solutions, LLC
+# @author Brian Katzung (briank@kappacs.com), Kappa Computer Solutions, LLC
+# @copyright 2013-2014 Brian Katzung and Kappa Computer Solutions, LLC
 # @license MIT License
+
+require 'rubyverse'
+require 'sarah'
 
 class LtdTemplate
 
-    VERSION = '0.2.3'
+    include Rubyverse
+
+    # Classes wanting to be instantiated with the template as first
+    # parameter mix in this module (via extend).
+    module Consumer; end
+
+    # Classes whose instances are their own template-method handlers
+    # mix in this module (via include) to avoid being proxied.
+    module Method_Handler; end
+
+    # Used to mark parameter lists that may be interpreted as scalar.
+    module Univalue; end
+
+    # This exception is raised when a resource limit is exceeded.
+    class ResourceLimitExceeded < RuntimeError; end
+
+    ##################################################
+
+    VERSION = '1.0.0'
 
     TOKEN_MAP = {
 	?. => :dot,		# method separator
@@ -22,44 +43,6 @@ class LtdTemplate
 	?} => :rbrace		# end code block
     }
 
-    # @!attribute [r] exceeded
-    # @return [Symbol, nil]
-    # The resource whose limit was being exceeded when an
-    # LtdTemplate::ResourceLimitExceeded exception was raised.
-    attr_reader :exceeded
-
-    # @!attribute [r] factory_singletons
-    # @return [Hash]
-    # A hash of factory singletons (e.g. nil, true, and false values)
-    # for this template.
-    attr_reader :factory_singletons
-
-    # @!attribute [r] limits
-    # @return [Hash]
-    # A hash of resource limits to enforce during parsing and rendering.
-    attr_reader :limits
-
-    # @!attribute [r] namespace
-    # @return [LtdTemplate::Value::Namespace, nil]
-    # The current namespace (at the bottom of the rendering namespace stack).
-    attr_reader :namespace
-
-    # @!attribute [r] options
-    # @return [Hash]
-    # Instance initialization options
-    attr_reader :options
-
-    # @!attribute [r] usage
-    # @return [Hash]
-    # A hash of resource usage. It is updated after calls to #parse and
-    # #render.
-    attr_reader :usage
-
-    # @!attribute [r] used
-    # @return [Hash]
-    # A hash of used resources for this template
-    attr_reader :used
-
     # @@classes contains the default factory classes. These can be overridden
     # globally using the #set_classes class method or per-template using the
     # #set_classes instance method.
@@ -68,32 +51,107 @@ class LtdTemplate
 	# These represent storable values. Some may also occur as
 	# literals in code blocks.
 	#
-	:array => 'LtdTemplate::Value::Array',
-	:boolean => 'LtdTemplate::Value::Boolean',
-	:explicit_block => 'LtdTemplate::Value::Code_Block',
+	:array => 'Sarah',
+	:array_proxy => 'LtdTemplate::Proxy::Array',
+	:array_splat => 'LtdTemplate::Value::Array_Splat',
+	:boolean_proxy => 'LtdTemplate::Proxy::Boolean',
+	:explicit_block => 'LtdTemplate::Value::Explicit_Block',
 	:namespace => 'LtdTemplate::Value::Namespace',
-	:nil => 'LtdTemplate::Value::Nil',
-	:number => 'LtdTemplate::Value::Number',
-	:string => 'LtdTemplate::Value::String',
+	:nil_proxy => 'LtdTemplate::Proxy::Nil',
+	:number_proxy => 'LtdTemplate::Proxy::Number',
+	:regexp => 'LtdTemplate::Value::Regexp',
+	:regexp_proxy => 'LtdTemplate::Proxy::Regexp',
+	:string_proxy => 'LtdTemplate::Proxy::String',
 
 	#
 	# These only occur as part of code blocks.
 	#
 	:call => 'LtdTemplate::Code::Call',
-	:implied_block => 'LtdTemplate::Code::Code_Block',
+	:code_block => 'LtdTemplate::Code::Block',
 	:parameters => 'LtdTemplate::Code::Parameters',
 	:subscript => 'LtdTemplate::Code::Subscript',
 	:variable => 'LtdTemplate::Code::Variable',
     }
 
+    # @@proxies contains the default mapping of native Ruby classes to
+    # factory symbols for the corresponding proxy classes.
+    # These can be overridden globally using the #set_proxies class method
+    # or per-template using the #set_proxies instance method.
+    # Unproxied native types will be invisible.
+    @@proxies = {
+	'NilClass' => :nil_proxy,
+	'FalseClass' => :boolean_proxy,
+	'TrueClass' => :boolean_proxy,
+	'Numeric' => :number_proxy,
+	'String' => :string_proxy,
+	'Regexp' => :regexp_proxy,
+	'Array' => :array_proxy,
+	'Hash' => :array_proxy,
+	'Sarah' => :array_proxy,
+    }
+
+    # @!attribute [r] limits
+    # @return [Hash]
+    # A hash of resource limits to enforce during parsing and rendering.
+    attr_reader :limits
+
+    # @!attribute [r] usage
+    # @return [Hash]
+    # A hash of resource usage. It is updated after calls to #parse and
+    # #render.
+    attr_reader :usage
+
+    # @!attribute [r] exceeded
+    # @return [Symbol, nil]
+    # The resource whose limit was being exceeded when an
+    # LtdTemplate::ResourceLimitExceeded exception was raised.
+    attr_reader :exceeded
+
+    # @!attribute [r] options
+    # @return [Hash]
+    # Instance initialization options.
+    attr_reader :options
+
+    # @!attribute [r] singletons
+    # @return [Hash]
+    # A hash of singletons (e.g. nil proxy instances) for this template.
+    attr_reader :singletons
+
+    # @!attribute [r] namespace
+    # @return [LtdTemplate::Value::Namespace, nil]
+    # The current namespace (at the bottom of the rendering namespace stack).
+    attr_reader :namespace
+
+    # @!attribute [r] runtime_methods
+    # @return [Hash]
+    # A hash (by object id and method name) of run-time methods for
+    # proxied objects during rendering.
+    attr_reader :runtime_methods
+
+    # @!attribute [r] used
+    # @return [Hash]
+    # The resources already $.use'd for this template
+    attr_reader :used
+
     # Change default factory classes globally
     #
-    # @param classes [Hash] A hash of factory symbols and corresponding
+    # @param mapping [Hash] A hash of factory symbols and corresponding
     #   classes to be instantiated.
     # @return [Hash] Returns the current class mapping.
-    def self.set_classes (classes)
-	@@classes.merge! classes
+    def self.set_classes (mapping)
+	@@classes.merge! mapping
     end
+
+    # Change default proxy types globally
+    #
+    # @param mapping [Hash] A hash of native object classes and corresponding
+    #   factory types for proxy objects to be instantiated.
+    # @return [Hash] Returns the current proxy mapping.
+    def self.set_proxies (mapping)
+	@@proxies.merge! mapping
+    end
+
+    ##################################################
 
     # Constructor
     #
@@ -101,12 +159,103 @@ class LtdTemplate
     # @option options [Proc] :loader Callback for $.use method
     # @option options [Proc] :missing_method Callback for missing methods
     def initialize (options = {})
-	@classes, @factory_singletons = {}, {}
+	@classes, @proxies = {}, {}
+	@singletons, @runtime_methods = {}, {}
 	@code, @namespace = nil, nil
-	@limits, @usage = {}, {}
+	@limits, @usage, @used = {}, {}, {}
 	@options = options
-	@used = {}
     end
+
+    ##################################################
+
+    # Throw an exception if a resource limit has been exceeded.
+    #
+    # @param resource [Symbol] The resource limit to be checked.
+    def check_limit (resource)
+	if @limits[resource] && @usage[resource] &&
+	  @usage[resource] > @limits[resource]
+	    @exceeded = resource
+	    raise LtdTemplate::ResourceLimitExceeded.new(
+	      "Exceeded #{resource} #{@limits[resource]}")
+	end
+    end
+
+    # Generate new code, value, or proxy objects.
+    #
+    # @param type [Symbol] The symbol for the type of object to generate,
+    #   e.g. :number_proxy, :string_proxy, :implicit_block, etc.
+    # @param args [Array] Type-specific initialization parameters.
+    # @return Returns the new code/value object.
+    def factory (type, *args)
+	use :factory
+	spec = @classes[type] || @@classes[type]
+	case spec
+	when nil
+	    raise ArgumentError, "Unknown template factory type #{type}"
+	when String
+	    # Convert the class name to a class on first use and cache it
+	    require spec.downcase.gsub('::', File::SEPARATOR)
+	    @classes[type] = klass = eval(spec)
+	else klass = spec
+	end
+	args.unshift self if klass.is_a? LtdTemplate::Consumer
+	if klass.respond_to? :instance then klass.instance *args
+	elsif klass.respond_to? :new then klass.new *args
+	else klass
+	end
+    end
+
+    # Convert a string into an array of parsing tokens.
+    #
+    # @param str [String] The string to split into parsing tokens.
+    # @return [Array<Array>]
+    def get_tokens (str)
+	tokens = []
+	str.split(%r{(
+	  /\*.*?\*/		# /* comment */
+	  |
+	  '(?:\\.|[^\.,\[\](){}\s])+# 'string
+	  |
+	  "(?:\\"|[^"])*"	# "string"
+	  |
+	  [@^][a-zA-Z0-9_]+	# root or parent identifier
+	  |
+	  [a-zA-Z_][a-zA-Z0-9_]*# alphanumeric identifier
+	  |
+	  -?\d+(?:\.\d+)?	# integer or real numeric literal
+	  |
+	  \.\.			# begin keyed values
+	  |
+	  [\.(,)\[\]{}]		# methods, calls, elements, blocks
+	  |
+	  \s+
+	  )}mx).grep(/\S/).each do |token|
+	    if token =~ %r{^/\*.*\*/$}s
+		# Ignore comment
+	    elsif token =~ /^'(.*)/s or token =~ /^"(.*)"$/s
+		# String literal
+		#tokens.push [ :string, $1.gsub(/\\(.)/, '\1') ]
+		tokens.push [ :string, parse_strlit($1) ]
+	    elsif token =~ /^-?\d+(?:\.\d+)?/
+		# Numeric literal
+		tokens.push [ :number, token =~ /\./ ?
+		  token.to_f : token.to_i ]
+	    elsif TOKEN_MAP[token]
+		# Delimiter
+		tokens.push [ TOKEN_MAP[token] ]
+	    elsif token =~ /^[@^][a-z0-9_]|^[a-z_]|^\$$/i
+		# Variable or alphanumeric method name
+		tokens.push [ :name, token ]
+	    else
+		# Punctuated method name
+		tokens.push [ :method, token ]
+	    end
+	end
+
+	tokens
+    end
+
+    def inspect; "#<#{self.class.name}##{self.object_id}>"; end
 
     # Parse a template from a string.
     #
@@ -145,180 +294,6 @@ class LtdTemplate
 	self
     end
 
-    # Override default factory classes for this template instance.
-    #
-    # @param classes [Hash] A hash of factory symbols and corresponding
-    #   classes to be instantiated.
-    # @return [LtdTemplate]
-    def set_classes (classes)
-	@classes.merge! classes
-	self
-    end
-
-    # Generate new code/value objects.
-    #
-    # @param type [Symbol] The symbol for the type of object to generate,
-    #   e.g. :number, :string, :implicit_block, etc.
-    # @param args [Array] Type-specific initialization parameters.
-    # @return Returns the new code/value object.
-    def factory (type, *args)
-	use :factory
-	type = @classes[type] || @@classes[type]
-	if type.is_a? String
-	    file = type.downcase.gsub '::', File::SEPARATOR
-	    require file
-	    eval(type).instance(self, *args)
-	else
-	    type.instance(self, *args)
-	end
-    end
-
-    # Shortcut for frequently used template factory :nil
-    def nil; @factory_singletons[:nil] || factory(:nil); end
-
-    # Render the template.
-    #
-    # The options hash may include :parameters, which may be an array or
-    # hash. These values will form the parameter array "_" in the root
-    # namespace.
-    #
-    # @param options [Hash] Rendering options.
-    # @return [String] The result of rendering the template.
-    def render (options = {})
-	@exceeded = nil		# No limit exceeded yet
-	@namespace = nil	# Reset the namespace stack between runs
-	@usage = {}		# Reset resource usage
-	@used = {}		# No libraries used yet
-
-	#
-	# Accept template parameters from an array or hash.
-	#
-	parameters = factory :array
-	parameters.set_from_array options[:parameters] if
-	  options[:parameters].is_a? Array
-	parameters.set_from_hash options[:parameters] if
-	  options[:parameters].is_a? Hash
-
-	#
-	# Create the root namespace and evaluate the template code.
-	#
-	push_namespace 'render', parameters
-	@code ? @code.get_value.to_text : ''
-    end
-
-    # Push a new namespace onto the namespace stack.
-    #
-    # @param method [String] The (native) method string. This will be
-    #   available as <tt>$.method</tt> within the template.
-    # @param parameters [Array<LtdTemplate::Code>] These are code blocks
-    #   to set the namespace parameters (available as the "_" array in the
-    #   template).
-    # @param opts [Hash] Options hash.
-    # @option opts [LtdTemplate::Value] :target The target of the method
-    #   call. This will be available as <tt>$.target</tt> within the template.
-    def push_namespace (method, parameters = nil, opts = {})
-	use :namespaces
-	use :namespace_depth
-	@namespace = factory :namespace, method, parameters, @namespace
-	@namespace.target = opts[:target] if opts[:target]
-    end
-
-    # Pop the current namespace from the stack.
-    def pop_namespace
-	if @namespace.parent
-	    @namespace = @namespace.parent
-	    use :namespace_depth, -1
-	end
-    end
-
-    # Track incremental usage of a resource.
-    #
-    # @param resource [Symbol] The resource being used.
-    # @param amount [Integer] The additional amount of the resource being
-    #   used (or released, if negative).
-    def use (resource, amount = 1)
-	@usage[resource] ||= 0
-	@usage[resource] += amount
-	check_limit resource
-    end
-
-    # Track peak usage of a resource.
-    #
-    # @param resource [Symbol] The resource being used.
-    # @param amount [Integer] The total amount of the resource currently
-    #   being used.
-    def using (resource, amount)
-	@usage[resource] ||= 0
-	@usage[resource] = amount if amount > @usage[resource]
-	check_limit resource
-    end
-
-    # Throw an exception if a resource limit has been exceeded.
-    #
-    # @param resource [Symbol] The resource limit to be checked.
-    def check_limit (resource)
-	if @limits[resource] and @usage[resource] and
-	  @usage[resource] > @limits[resource]
-	    @exceeded = resource
-	    raise LtdTemplate::ResourceLimitExceeded
-	end
-    end
-
-    # Convert a string into an array of parsing tokens.
-    #
-    # @param str [String] The string to split into parsing tokens.
-    # @return [Array<Array>]
-    def get_tokens (str)
-	tokens = []
-	str.split(%r{(
-	  /\*.*?\*/		# /* comment */
-	  |
-	  '(?:\\.|[^\.,\[\](){}\s])+# 'string
-	  |
-	  "(?:\\"|[^"])*"	# "string"
-	  |
-	  [@^][a-zA-Z0-9_]+	# root or parent identifier
-	  |
-	  [a-zA-Z_][a-zA-Z0-9_]*# alphanumeric identifier
-	  |
-	  -?\d+(?:\.\d+)?	# integer or real numeric literal
-	  |
-	  \.\.			# begin keyed values
-	  |
-	  [\.(,)\[\]{}]		# methods, calls, elements, blocks
-	  |
-	  \s+
-	  )}mx).grep(/\S/).each do |token|
-	    if token =~ %r{^/\*.*\*/$}s
-		# Ignore comment
-	    elsif token =~ /^'(.*)/s or token =~ /^"(.*)"$/s
-		# String literal
-		#tokens.push [ :string, $1.gsub(/\\(.)/, '\1') ]
-		tokens.push [ :string, parse_strlit($1) ]
-	    elsif token =~ /^-?\d+(?:\.\d+)?/
-		# Numeric literal
-		tokens.push [ :number, token ]
-	    elsif TOKEN_MAP[token]
-		# Delimiter
-		tokens.push [ TOKEN_MAP[token] ]
-	    elsif token =~ /^[@^][a-z0-9_]|^[a-z_]|^\$$/i
-		# Variable or alphanumeric method name
-		tokens.push [ :name, token ]
-	    else
-		# Punctuated method name
-		tokens.push [ :method, token ]
-	    end
-	end
-
-	tokens
-    end
-
-    # This is the top-level token parser.
-    #
-    # @param tokens [Array<Array>] The tokens to be parsed.
-    # @return [LtdTemplate::Code] The implementation code.
-    def parse_template (tokens); parse_block tokens; end
-
     # Parse a code block, stopping at any stop token.
     #
     # @param tokens [Array<Array>] The raw token stream.
@@ -332,10 +307,8 @@ class LtdTemplate
 
 	    token = tokens.shift# Consume the current token
 	    case token[0]
-	    when :string, :ext_string	# string literal
-		code.push factory(:string, token[1])
-	    when :number	# numeric literal
-		code.push factory(:number, token[1])
+	    when :string, :ext_string, :number	# string and numeric literals
+		code.push token[1]
 	    when :name		# variable
 		code.push factory(:variable, token[1])
 	    when :lbrack	# variable element subscripts
@@ -367,35 +340,7 @@ class LtdTemplate
 	    end
 	end
 
-	(code.size == 1) ? code[0] : factory(:implied_block, code)
-    end
-
-    # Parse subscripts after the opening left bracket
-    #
-    # @param tokens [Array<Array>]] The token stream.
-    # @return [Array<LtdTemplate::Code>]
-    def parse_subscripts (tokens)
-	subs = parse_list tokens, [ :rbrack ], [ :lbrack ]
-	tokens.shift		# Consume ]
-	subs
-    end
-
-    # Parse a positional and/or named parameter list
-    #
-    # @param tokens [Array<Array>] The token stream.
-    # @return [LtdTemplate::Code::Parameters]
-    def parse_parameters (tokens)
-	positional = parse_list tokens, [ :dotdot, :rparen ]
-
-	if tokens[0] and tokens[0][0] == :dotdot
-	    tokens.shift	# Consume ..
-	    named = parse_list tokens, [ :rparen ]
-	else
-	    named = nil
-	end
-
-	tokens.shift		# Consume )
-	factory :parameters, positional, named
+	(code.size == 1) ? code[0] : factory(:code_block, code)
     end
 
     # Common code for parsing various lists.
@@ -423,6 +368,24 @@ class LtdTemplate
 	end
 
 	list
+    end
+
+    # Parse a positional and/or named parameter list
+    #
+    # @param tokens [Array<Array>] The token stream.
+    # @return [LtdTemplate::Code::Parameters]
+    def parse_parameters (tokens)
+	positional = parse_list tokens, [ :dotdot, :rparen ]
+
+	if tokens[0] and tokens[0][0] == :dotdot
+	    tokens.shift	# Consume ..
+	    named = parse_list tokens, [ :rparen ]
+	else
+	    named = nil
+	end
+
+	tokens.shift		# Consume )
+	factory :parameters, positional, named
     end
 
     # Parse escape sequences in string literals.
@@ -456,7 +419,151 @@ class LtdTemplate
 	  end.join ''
     end
 
+    # Parse subscripts after the opening left bracket
+    #
+    # @param tokens [Array<Array>]] The token stream.
+    # @return [Array<LtdTemplate::Code>]
+    def parse_subscripts (tokens)
+	subs = parse_list tokens, [ :rbrack ], [ :lbrack ]
+	tokens.shift		# Consume ]
+	subs
+    end
+
+    # This is the top-level token parser.
+    #
+    # @param tokens [Array<Array>] The tokens to be parsed.
+    # @return [LtdTemplate::Code] The implementation code.
+    def parse_template (tokens); parse_block tokens; end
+
+    # Pop the current namespace from the stack.
+    def pop_namespace
+	if @namespace.parent
+	    @namespace = @namespace.parent
+	    use :namespace_depth, -1
+	end
+    end
+
+    # Return the factory type symbol for a value's method handler class.
+    #
+    # @param type [Class] The value's class.
+    # @return The factory type symbol for the value's method-handler class.
+    def proxy_type (type)
+	if type
+	    type_name = type.name
+	    if !@proxies.has_key? type_name
+		# No local proxy class for this type; check the global
+		# settings and the proxy type for the superclass.
+		@proxies[type_name] = @@proxies[type_name] ||
+		  proxy_type(type.superclass)
+	    end
+	    @proxies[type_name]
+	else
+	    nil
+	end
+    end
+
+    # Push a new namespace onto the namespace stack.
+    #
+    # @param method [String] The (native) method string. This will be
+    #   available as <tt>$.method</tt> within the template.
+    # @param parameters [Array<LtdTemplate::Code>] These are code blocks
+    #   to set the namespace parameters (available as the "_" array in the
+    #   template).
+    # @param opts [Hash] Options hash.
+    # @option opts [LtdTemplate::Value] :target The target of the method
+    #   call. This will be available as <tt>$.target</tt> within the template.
+    def push_namespace (method, parameters = nil, opts = {})
+	use :namespaces
+	use :namespace_depth
+	@namespace = factory :namespace, method, parameters, @namespace
+	@namespace.target = opts[:target] if opts[:target]
+    end
+
+    # Render the template.
+    #
+    # The options hash may include :parameters, which may be an array or
+    # hash. These values will form the parameter array "_" in the root
+    # namespace.
+    #
+    # @param options [Hash] Rendering options.
+    # @return [String] The result of rendering the template.
+    def render (options = {})
+	#
+	# Reset for each rendering
+	#
+	@exceeded, @usage, @used = nil, {}, {}
+	@namespace = nil
+	@runtime_methods = {}
+
+	#
+	# Create the root namespace and evaluate the template code.
+	#
+	if @code
+	    params = Sarah.new
+	    params.set *options[:parameters] if options[:parameters]
+	    push_namespace 'render', params
+	    rubyversed(@code).evaluate.in_rubyverse(self).tpl_text
+	else
+	    ''
+	end
+    end
+
+    # Return an object to handle template methods for the supplied object.
+    #
+    # Unrecognized object types will be treated as nil.
+    def rubyverse_new (object)
+	if object.is_a? LtdTemplate::Method_Handler
+	    object	# The object handles its own template methods.
+	elsif type = proxy_type(object.class)
+	    factory type, object
+	else rubyversed nil
+	end
+    end
+
+    # Override the default factory class mapping for this template instance.
+    #
+    # @param mapping [Hash] A hash of factory symbols and corresponding
+    #   classes to be instantiated.
+    # @return [LtdTemplate]
+    def set_classes (mapping)
+	@classes.merge! mapping
+	self
+    end
+
+    # Override the default proxy types for this template instance.
+    #
+    # @param mapping [Hash] A hash of class names and corresponding
+    #   factory types for proxy objects to be instantiated.
+    # @return [LtdTemplate]
+    def set_proxies (mapping)
+	@proxies.merge! mapping
+	self
+    end
+
+    # Track incremental usage of a resource.
+    #
+    # @param resource [Symbol] The resource being used.
+    # @param amount [Integer] The additional amount of the resource being
+    #   used (or released, if negative).
+    def use (resource, amount = 1)
+	@usage[resource] ||= 0
+	@usage[resource] += amount
+	check_limit resource
+    end
+
+    # Track peak usage of a resource.
+    #
+    # @param resource [Symbol] The resource being used.
+    # @param amount [Integer] The total amount of the resource currently
+    #   being used.
+    def using (resource, amount)
+	@usage[resource] ||= 0
+	if amount > @usage[resource]
+	    @usage[resource] = amount
+	    check_limit resource
+	end
+    end
+
 end
 
-# This exception is raised when a resource limit is exceeded.
-class LtdTemplate::ResourceLimitExceeded < RuntimeError; end
+# END

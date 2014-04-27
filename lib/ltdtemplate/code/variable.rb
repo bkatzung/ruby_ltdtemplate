@@ -25,6 +25,22 @@ class LtdTemplate::Code::Variable < LtdTemplate::Code
     end
 
     #
+    # Evaluate
+    #
+    def evaluate (opts = {})
+	case opts[:method]
+	when '=', '?='
+	    if opts[:method] != '?=' || namespace().get_item(@name).nil?
+		params = opts[:parameters]
+		params = params[0] if params.is_a? LtdTemplate::Univalue
+		self.namespace[@name] = params
+	    end
+	    nil
+	else rubyversed(self.namespace[@name]).evaluate opts
+	end
+    end
+
+    #
     # Return the namespace in which this variable currently resides
     # (or would reside, if it doesn't currently exist).
     #
@@ -37,41 +53,8 @@ class LtdTemplate::Code::Variable < LtdTemplate::Code
 	base.find_item(@name) || base
     end
 
-    #
-    # Return the namespace item for this variable.
-    #
-    def target; namespace.get_item(@name); end
-
-    #
-    # Implement the subscripting interface.
-    #
-    def has_item? (key); target.has_item? key; end
-    def get_item (key); target.get_item key; end
-    def set_item (key, value); target.set_item key, value; end
-
-    #
-    # Try to set the value.
-    #
-    def set_value (value)
-	namespace.set_item(@name, value)
-    end
-
-    #
-    # Is this variable set?
-    # Among other possible uses, this is needed for determining when to
-    # auto-vivicate array subscripts.
-    #
-    def is_set?; namespace.has_item? @name; end
-
-    def get_value (opts = {})
-	case opts[:method]
-	when '=' then do_set opts	# see LtdTemplate::Code
-	when '?='
-	    if is_set? then @template.nil
-	    else do_set opts
-	    end
-	else target.get_value opts
-	end
-    end
+    def receiver; self; end
 
 end
+
+# END

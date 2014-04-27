@@ -5,6 +5,9 @@
 # License:: MIT License
 
 require 'ltdtemplate/code'
+require 'ltdtemplate/value/array_splat'
+
+module LtdTemplate::Univalue; end
 
 class LtdTemplate::Code::Parameters < LtdTemplate::Code
 
@@ -25,44 +28,34 @@ class LtdTemplate::Code::Parameters < LtdTemplate::Code
     # Evaluate the code provided for the positional and named parameters
     # and return a corresponding array t-value.
     #
-    def get_value (opts = {})
-	named = {}
+    def evaluate (opts = {})
+	params = @template.factory :array
 
 	# Process the positional parameters (pos1, ..., posN)
-	positional = @positional.map do |code|
-	    val = code.get_value
-	    if val.is_a? LtdTemplate::Code::Parameters
-		if val.named.is_a? Hash
-		    # Named parameters from array/
-		    val.named.each { |key, val| named[key] = val }
-		elsif val.named.is_a? Array
-		    # Named parameters from array%
-		    val.named.each_slice(2) do |key, val|
-			named[key.get_value.to_native] = val if val
-		    end
-		end
-		val.positional # Positional parameters from array/
-	    else val
+	@positional.each do |code|
+	    value = rubyversed(code).evaluate
+	    if value.is_a? LtdTemplate::Value::Array_Splat
+		# Merge parameters from array/ or array%
+		params.concat value.positional
+		params.set_pairs *value.named if value.named
+	    else params.push value
 	    end
-	end.flatten
+	end
 
 	# Process the named parameters (.. key1, val1, ..., keyN, valN)
 	if @named
-	    if @named.is_a? Hash then named.merge! @named
-	    else
-		@named.each_slice(2) do |key, val|
-		    named[key.get_value.to_native] = val.get_value if val
-		end
+	    @named.each_slice(2) do |k_code, v_code|
+		params[rubyversed(k_code).evaluate] =
+		  rubyversed(v_code).evaluate if v_code
 	    end
-	    scalar = false
-	else
-	    scalar = positional.size == 1 and !named.empty?
 	end
 
-	array = @template.factory(:array).set_value(positional, named, scalar)
+	params.extend LtdTemplate::Univalue if
+	  !@named && params.size(:seq) == 1
 
-	# Parameters may get called if chained, e.g. array/.type
-	opts[:method] ? array.get_value(opts) : array
+	params
     end
 
 end
+
+# END
