@@ -1,7 +1,7 @@
-# LtdTemplate::Code::Block - Represents a code block (a list of
+# LtdTemplate::Code::Sequence - Represents a code sequence (a list of
 #	code steps) in an LtdTemplate
 #
-# Implied code blocks do not accept parameters or generate new namespaces.
+# Code sequences do not accept parameters or generate new namespaces.
 # They are used for things like call parameters and subscript expressions.
 # See also: LtdTemplate::Value::Code_Block.
 #
@@ -11,20 +11,20 @@
 
 require 'ltdtemplate/code'
 
-class LtdTemplate::Code::Block < LtdTemplate::Code
+class LtdTemplate::Code::Sequence < LtdTemplate::Code
 
     def initialize (template, code)
 	super template
 	@code = code
     end
 
+    # Evaluate the code sequence.
     def evaluate (opts = {})
-	values = @code.map { |code| rubyversed(code).evaluate }.
-	  flatten
+	values = @code.map { |code| rubyversed(code).evaluate }.flatten
 	case values.size
 	when 0 then nil
 	when 1 then values[0]
-	else values
+	else values.map { |val| rubyversed(val).tpl_text }.join ''
 	end
     end
 

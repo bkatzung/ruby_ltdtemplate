@@ -1,9 +1,9 @@
-# LtdTemplate::Value::Explicit_Block - Represents an explicit code block
+# LtdTemplate::Value::Code_Block - Represents an explicit code block
 #	in an LtdTemplate
 #
-# Explicit code blocks are wrappers around implied code blocks. They are
-# essentially anonymous functions; they accept optional parameters and
-# create a new namespace for the duration of each execution.
+# Code blocks are wrappers around code sequences. They are essentially
+# anonymous functions; they accept optional parameters and create a new
+# namespace for the duration of each execution.
 #
 # @author Brian Katzung <briank@kappacs.com>, Kappa Computer Solutions, LLC
 # @copyright 2013-2014 Brian Katzung and Kappa Computer Solutions, LLC
@@ -11,7 +11,7 @@
 
 require 'ltdtemplate/value'
 
-class LtdTemplate::Value::Explicit_Block
+class LtdTemplate::Value::Code_Block
 
     include LtdTemplate::Value
 
@@ -22,6 +22,8 @@ class LtdTemplate::Value::Explicit_Block
 	@code = code
     end
 
+    # Evaluate supported methods on code blocks. Most methods
+    # are passed to the code block.
     def evaluate (opts = {})
 	case opts[:method]
 	when nil then self
@@ -36,6 +38,8 @@ class LtdTemplate::Value::Explicit_Block
 	end
     end
 
+    # In contrast to an implied code block, an uncalled explicit code
+    # block generates no template output.
     def tpl_text; ''; end
 
 end

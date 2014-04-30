@@ -17,7 +17,7 @@ class LtdTemplate::Value::Namespace < Sarah
     attr_accessor :target
 
     def initialize (template, tpl_method, parameters, parent = nil)
-	@template = template
+	super template
 	@tpl_method, @parameters = tpl_method, parameters
 	@root = parent ? parent.root : self
 	@parent = parent
@@ -25,9 +25,7 @@ class LtdTemplate::Value::Namespace < Sarah
 	clear()
     end
 
-    #
     # Clear values except for permanent namespace attributes.
-    #
     def clear
 	super
 	self['_'] = @parameters
@@ -37,6 +35,7 @@ class LtdTemplate::Value::Namespace < Sarah
 	self
     end
 
+    # Evaluate supported methods on namespaces.
     def evaluate (opts = {})
 	case opts[:method]
 	when nil, 'call' then self
@@ -57,9 +56,7 @@ class LtdTemplate::Value::Namespace < Sarah
 	end
     end
 
-    #
     # Search for the specified item in the current namespace or above.
-    #
     def find_item (name)
 	namespace = self
 	while namespace
@@ -69,14 +66,16 @@ class LtdTemplate::Value::Namespace < Sarah
 	namespace
     end
 
+    # Namespaces do not generate template output.
     def tpl_text; ''; end
 
-    def xkeys_new (*args); Sarah.new; end
+    # Auto-vivicate arrays in namespaces.
+    def xkeys_new (*args); @template.factory :array; end
 
     ###################################################
 
-    # Add new namespace names with nil or specific values
-    #
+    # Add new namespace names with nil or specific values.
+    # $.var(name1, ..., nameN .. key1, val1, ..., keyN, valN)
     def do_add_names (opts)
 	if params = opts[:parameters]
 	    params.each(:seq) { |idx, val| self[val] = nil }
@@ -86,6 +85,7 @@ class LtdTemplate::Value::Namespace < Sarah
     end
 
     # Implement conditionals
+    # $.if({test1}, {result1}, ..., {testN}, {resultN}, {else_value})
     def do_if (opts)
 	if params = opts[:parameters]
 	    params.values(:seq).each_slice(2) do |pair|
@@ -106,6 +106,9 @@ class LtdTemplate::Value::Namespace < Sarah
 	nil
     end
 
+    # Implement loops
+    # $.loop({pre_test}, {body})
+    # $.loop({pre_test}, {body}, {post_test})
     def do_loop (opts)
 	results = @template.factory :array
 	if (params = opts[:parameters]) && params.size(:seq) > 1
@@ -121,6 +124,7 @@ class LtdTemplate::Value::Namespace < Sarah
 	results
     end
 
+    # Load external resources
     def do_use (opts)
 	tpl = @template
 	if (loader = tpl.options[:loader]) && (params = opts[:parameters]) &&

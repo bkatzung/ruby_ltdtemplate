@@ -13,10 +13,8 @@ class LtdTemplate::Code::Parameters < LtdTemplate::Code
 
     attr_reader :positional, :named
 
-    #
     # Create a parameter list builder with code to generate positional
     # values and possibly code to generate named values.
-    #
     def initialize (template, positional = [], named = nil)
 	super template
 
@@ -24,10 +22,10 @@ class LtdTemplate::Code::Parameters < LtdTemplate::Code
 	@positional, @named = positional, named
     end
 
-    #
     # Evaluate the code provided for the positional and named parameters
-    # and return a corresponding array t-value.
+    # and return a corresponding Sarah.
     #
+    # @return [Sarah]
     def evaluate (opts = {})
 	params = @template.factory :array
 
@@ -50,6 +48,7 @@ class LtdTemplate::Code::Parameters < LtdTemplate::Code
 	    end
 	end
 
+	# Is this a candidate for scalar assignment?
 	params.extend LtdTemplate::Univalue if
 	  !@named && params.size(:seq) == 1
 

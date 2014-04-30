@@ -18,7 +18,7 @@ class LtdTemplate::Proxy
     # Return the Rubyverse original object.
     def rubyverse_original; @original; end
 
-    # Shortcut to template rubyversed.
+    # Shortcut to rubyversed in the tamplate.
     def rubyversed (obj); @template.rubyversed obj; end
 
 end

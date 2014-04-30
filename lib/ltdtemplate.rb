@@ -13,15 +13,18 @@ class LtdTemplate
 
     include Rubyverse
 
-    # Classes wanting to be instantiated with the template as first
-    # parameter mix in this module (via extend).
+    # Classes that "extend LtdTemplate::Consumer" are instantiated
+    # with the template as the first parameter by LtdTemplate#factory.
     module Consumer; end
 
-    # Classes whose instances are their own template-method handlers
-    # mix in this module (via include) to avoid being proxied.
+    # Instances of classes that "include LtdTemplate::Method_Handler"
+    # handle their own template methods in our Rubyverse and don't need
+    # a proxy object.
     module Method_Handler; end
 
-    # Used to mark parameter lists that may be interpreted as scalar.
+    # Use "params.extend LtdTemplate::Univalue" to mark parameter lists
+    # that may be interpreted as scalar (e.g. a single value and no
+    # ".." operator).
     module Univalue; end
 
     # This exception is raised when a resource limit is exceeded.
@@ -48,18 +51,21 @@ class LtdTemplate
     # #set_classes instance method.
     @@classes = {
 	#
-	# These represent storable values. Some may also occur as
-	# literals in code blocks.
+	# These represent storable values.
 	#
 	:array => 'Sarah',
-	:array_proxy => 'LtdTemplate::Proxy::Array',
 	:array_splat => 'LtdTemplate::Value::Array_Splat',
-	:boolean_proxy => 'LtdTemplate::Proxy::Boolean',
-	:explicit_block => 'LtdTemplate::Value::Explicit_Block',
+	:code_block => 'LtdTemplate::Value::Code_Block',
 	:namespace => 'LtdTemplate::Value::Namespace',
+	:regexp => 'LtdTemplate::Value::Regexp',
+
+	#
+	# These proxies provide template methods for native values.
+	#
+	:array_proxy => 'LtdTemplate::Proxy::Array',
+	:boolean_proxy => 'LtdTemplate::Proxy::Boolean',
 	:nil_proxy => 'LtdTemplate::Proxy::Nil',
 	:number_proxy => 'LtdTemplate::Proxy::Number',
-	:regexp => 'LtdTemplate::Value::Regexp',
 	:regexp_proxy => 'LtdTemplate::Proxy::Regexp',
 	:string_proxy => 'LtdTemplate::Proxy::String',
 
@@ -67,7 +73,7 @@ class LtdTemplate
 	# These only occur as part of code blocks.
 	#
 	:call => 'LtdTemplate::Code::Call',
-	:code_block => 'LtdTemplate::Code::Block',
+	:code_seq => 'LtdTemplate::Code::Sequence',
 	:parameters => 'LtdTemplate::Code::Parameters',
 	:subscript => 'LtdTemplate::Code::Subscript',
 	:variable => 'LtdTemplate::Code::Variable',
@@ -79,15 +85,15 @@ class LtdTemplate
     # or per-template using the #set_proxies instance method.
     # Unproxied native types will be invisible.
     @@proxies = {
-	'NilClass' => :nil_proxy,
-	'FalseClass' => :boolean_proxy,
-	'TrueClass' => :boolean_proxy,
-	'Numeric' => :number_proxy,
-	'String' => :string_proxy,
-	'Regexp' => :regexp_proxy,
 	'Array' => :array_proxy,
+	'FalseClass' => :boolean_proxy,
 	'Hash' => :array_proxy,
+	'NilClass' => :nil_proxy,
+	'Numeric' => :number_proxy,
+	'Regexp' => :regexp_proxy,
 	'Sarah' => :array_proxy,
+	'String' => :string_proxy,
+	'TrueClass' => :boolean_proxy,
     }
 
     # @!attribute [r] limits
@@ -112,21 +118,10 @@ class LtdTemplate
     # Instance initialization options.
     attr_reader :options
 
-    # @!attribute [r] singletons
-    # @return [Hash]
-    # A hash of singletons (e.g. nil proxy instances) for this template.
-    attr_reader :singletons
-
     # @!attribute [r] namespace
     # @return [LtdTemplate::Value::Namespace, nil]
     # The current namespace (at the bottom of the rendering namespace stack).
     attr_reader :namespace
-
-    # @!attribute [r] runtime_methods
-    # @return [Hash]
-    # A hash (by object id and method name) of run-time methods for
-    # proxied objects during rendering.
-    attr_reader :runtime_methods
 
     # @!attribute [r] used
     # @return [Hash]
@@ -160,7 +155,6 @@ class LtdTemplate
     # @option options [Proc] :missing_method Callback for missing methods
     def initialize (options = {})
 	@classes, @proxies = {}, {}
-	@singletons, @runtime_methods = {}, {}
 	@code, @namespace = nil, nil
 	@limits, @usage, @used = {}, {}, {}
 	@options = options
@@ -183,7 +177,7 @@ class LtdTemplate
     # Generate new code, value, or proxy objects.
     #
     # @param type [Symbol] The symbol for the type of object to generate,
-    #   e.g. :number_proxy, :string_proxy, :implicit_block, etc.
+    #   e.g. :number_proxy, :string_proxy, :code_block, etc.
     # @param args [Array] Type-specific initialization parameters.
     # @return Returns the new code/value object.
     def factory (type, *args)
@@ -198,16 +192,16 @@ class LtdTemplate
 	    @classes[type] = klass = eval(spec)
 	else klass = spec
 	end
+	use type
 	args.unshift self if klass.is_a? LtdTemplate::Consumer
-	if klass.respond_to? :instance then klass.instance *args
-	elsif klass.respond_to? :new then klass.new *args
+	if klass.respond_to? :new then klass.new *args
 	else klass
 	end
     end
 
-    # Convert a string into an array of parsing tokens.
+    # Convert a string into an array of parser tokens.
     #
-    # @param str [String] The string to split into parsing tokens.
+    # @param str [String] The string to split into parser tokens.
     # @return [Array<Array>]
     def get_tokens (str)
 	tokens = []
@@ -243,7 +237,7 @@ class LtdTemplate
 	    elsif TOKEN_MAP[token]
 		# Delimiter
 		tokens.push [ TOKEN_MAP[token] ]
-	    elsif token =~ /^[@^][a-z0-9_]|^[a-z_]|^\$$/i
+	    elsif token =~ /^[@^][a-z0-9_]|^[a-z_]|^[@^\$]$/i
 		# Variable or alphanumeric method name
 		tokens.push [ :name, token ]
 	    else
@@ -255,6 +249,7 @@ class LtdTemplate
 	tokens
     end
 
+    # Don't "spill our guts" upon inspection.
     def inspect; "#<#{self.class.name}##{self.object_id}>"; end
 
     # Parse a template from a string.
@@ -334,13 +329,13 @@ class LtdTemplate
 		params = parse_parameters tokens
 		code.push factory(:call, code.pop, 'call', params) if code[0]
 	    when :lbrace	# explicit code block
-		code.push factory(:explicit_block,
+		code.push factory(:code_block,
 		  parse_block(tokens, [ :rbrace ]))
 		tokens.shift if tokens[0]	# Consume }
 	    end
 	end
 
-	(code.size == 1) ? code[0] : factory(:code_block, code)
+	(code.size == 1) ? code[0] : factory(:code_seq, code)
     end
 
     # Common code for parsing various lists.
@@ -432,7 +427,6 @@ class LtdTemplate
     # This is the top-level token parser.
     #
     # @param tokens [Array<Array>] The tokens to be parsed.
-    # @return [LtdTemplate::Code] The implementation code.
     def parse_template (tokens); parse_block tokens; end
 
     # Pop the current namespace from the stack.
@@ -466,11 +460,10 @@ class LtdTemplate
     #
     # @param method [String] The (native) method string. This will be
     #   available as <tt>$.method</tt> within the template.
-    # @param parameters [Array<LtdTemplate::Code>] These are code blocks
-    #   to set the namespace parameters (available as the "_" array in the
-    #   template).
+    # @param parameters [Sarah] The code block parameters (available as
+    #   the "_" array in the template).
     # @param opts [Hash] Options hash.
-    # @option opts [LtdTemplate::Value] :target The target of the method
+    # @option opts [Object] :target The target of the method
     #   call. This will be available as <tt>$.target</tt> within the template.
     def push_namespace (method, parameters = nil, opts = {})
 	use :namespaces
@@ -486,6 +479,10 @@ class LtdTemplate
     # namespace.
     #
     # @param options [Hash] Rendering options.
+    # @option options [Array|Sarah] :parameters Parameters (copied to
+    #  array "_" in the template)
+    # @option options [Boolean] :cleanup Set to false to disable
+    #  post-rendering cleanup.
     # @return [String] The result of rendering the template.
     def render (options = {})
 	#
@@ -493,7 +490,6 @@ class LtdTemplate
 	#
 	@exceeded, @usage, @used = nil, {}, {}
 	@namespace = nil
-	@runtime_methods = {}
 
 	#
 	# Create the root namespace and evaluate the template code.
@@ -503,9 +499,10 @@ class LtdTemplate
 	    params.set *options[:parameters] if options[:parameters]
 	    push_namespace 'render', params
 	    rubyversed(@code).evaluate.in_rubyverse(self).tpl_text
-	else
-	    ''
+	else ''
 	end
+    ensure
+	self.rubyverse_map.clear unless options[:cleanup] == false
     end
 
     # Return an object to handle template methods for the supplied object.

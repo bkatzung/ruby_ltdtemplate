@@ -8,6 +8,7 @@ require 'ltdtemplate/proxy'
 
 class LtdTemplate::Proxy::Number < LtdTemplate::Proxy
 
+    # Evaluate supported methods for numeric objects.
     def evaluate (opts = {})
 	case opts[:method]
 	when nil, 'call' then @original
@@ -37,10 +38,10 @@ class LtdTemplate::Proxy::Number < LtdTemplate::Proxy
 
     # Implement numeric comparison operators
     def do_compare (opts)
-	diff = 0
-	if (params = opts[:parameters]) && (params.size(:seq) > 0)
+	if (params = opts[:parameters]) && params.size(:seq) > 0 &&
+	  params[0].is_a?(Numeric)
 	    diff = params[0]
-	    diff = 0 unless diff.is_a? Numeric
+	else diff = 0
 	end
 	diff = @original - diff
 	case opts[:method]

@@ -11,7 +11,7 @@ td:first-child, th:first-child { padding-left: 0.3em }
 </head>
 <body>
 <h1 id='top'>LtdTemplate Manual<br>
-<span style='font-size: smaller'>Version 0.2.2; July 29, 2013</span></h1>
+<span style='font-size: smaller'>Version 1.0.0; 2014-04-27</span></h1>
 
 <h2>Author(s)</h2>
 
@@ -190,8 +190,8 @@ digits.</p>
 
 <blockquote><code>0.125 1 -2 3.0 -4.5</code></blockquote>
 
-<p>LtdTemplate does not support numeric literals in scientific notation
-or bases other than ten.</p>
+<p>LtdTemplate does not currently support numeric literals in scientific
+notation or bases other than ten.</p>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
@@ -269,10 +269,12 @@ if not immediately preceded by punctuation.</p>
 
 <h3 id='assignment_syntax'>Assignments</h3>
 
-<p>Variables support two assignment method calls: unconditional
-(<code>=</code>) and conditional (<code>?=</code>). A conditional
-assignment does nothing if the variable is already bound to (holds a
-reference to) a value (including the nil value). Assignments do not
+<p>Variables (and array subscripts, covered later) support two assignment
+method calls: unconditional (<code>=</code>) and conditional
+(<code>?=</code>). A conditional assignment does nothing if the variable is
+already bound to (holds a reference to) a value other than the nil
+value. (This is a change from versions prior to 1.0.0; in those versions
+even a nil value prevented a conditional assignment.) Assignments do not
 render in the template output.</p>
 
 <p>If called with a single parameter and no "dot dot" symbol, the value of
@@ -310,11 +312,11 @@ others will be created in the current namespace.</p>
     destroyed when the code block completes.</td></tr>
 
 <tr><td><code>^</code></td>
-    <td>This variable refers to the previous namespace if there is one,
-    or <a href='#nil_value'>nil</a> if there isn't.</td></tr>
+    <td>This variable refers to the previous (parent) namespace if there
+    is one, or <a href='#nil_value'>nil</a> if there isn't.</td></tr>
 
 <tr><td><code>@</code></td>
-    <td>This variable refers to the first (also known as "root" or
+    <td>This variable refers to the first (also known as the "root" or
     "top-level") namespace.</td></tr>
 
 <tr><td><code>_</code></td>
@@ -333,20 +335,20 @@ expressions. <a href='#template_syntax'>Templates</a>,
 <a href='#call_syntax'>method call</a> parameters, and
 <a href='#codeblock_syntax'>code block</a> bodies are all code sequences.</p>
 
-<p>If a code sequence consists of a single, non-string value and does
-not constitute the entire template code, it is retained as-is. Otherwise,
-the string value of each element in the sequence, if any, is combined to
+<p>If a code sequence consists of a single value and does not constitute
+the entire template code, it is retained as-is. Otherwise, the string
+value of each element in the sequence, if any, is combined to
 produce the result of the code sequence.</p>
 
 <blockquote><code>'Hello $.true ", " num=(5) num-(4) " world!"<br>
-/* 5 and 4 are single, non-string values in their code sequences */<br>
+/* 5 and 4 are single values in their code sequences */<br>
 /* $.true and num=(5) render nothing */<br>
 /* num-(4) returns the number 1 but it's string value gets used */<br>
 /* => Hello, 1 world! */</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
-<h3 id='codeblock_syntax'>Code Blocks</h3>
+<h3 id='codeblock_syntax'>Code Blocks And Bindings</h3>
 
 <p>If you surround a <a href='#codeseq_syntax'>code sequence</a>
 by braces (<code>{</code> and <code>}</code>), you create a code
@@ -358,9 +360,32 @@ the code sequence within the code block.</p>
 render_method.hi " " render_method.there
 /* => hi there */</code></blockquote>
 
+<p>Code blocks (or other values) may be bound to values using the
+<code>methods</code> method and subsequently called like
+<a href='#call_syntax'>methods</a>.
+
+<p>The <code>methods</code> method takes any number of name-and-binding
+pairs to be added or updated. If there are an odd number of parameters
+(i.e. there is a final name without a binding), the existing binding, if any,
+associated with that name is returned. Specifying nil ($.nil) as the
+binding will actually delete any existing binding for the given name.</p>
+
+<blockquote><code>@.methods('greet,{"Hello, "_[0]"."})<br>
+@.greet('Dave) /* => Hello, Dave. */</code></blockquote>
+
+<p>You can also bind code blocks to proxy objects to be used by an entire
+class of values.</p>
+
+<blockquote><code>@Array?=(') /* bind the array proxy to a unique object */<br>
+@Array.methods('list, { $.target.join(", ") }) /* bind the list method */<br>
+$.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
+
+<p>Methods added this way are only called if there is no standard method
+with the same name.</p>
+
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
-<h3 id='subscript_syntax'>Subscripts And Code-Block Bindings</h3>
+<h3 id='subscript_syntax'>Subscripts</h3>
 
 <p>Any expression that evaluates to an array (or tree of nested arrays)
 may be subscripted to select a particular value or nested array from the
@@ -377,20 +402,13 @@ array_var['items][5] /* as above - alternate syntax */</code></blockquote>
 <p>If the requested item does not exist, the special value
 "<a href='#nil_value'>nil</a>" is used instead.</p>
 
-<p>LtdTemplate also uses subscript syntax to bind
-<a href='#codeblock_syntax'>code blocks</a> to non-array values. These can
-subsequently be called like <a href='#call_syntax'>methods</a>. They
-never override standard methods.</p>
+<p>Prior to version 1.0.0, LtdTemplate also used subscript syntax to bind
+<a href='#codeblock_syntax'>code blocks</a> to non-array values. The syntax
+is shown here for historical reference but is <strong>no longer
+supported</strong>:</p>
 
 <blockquote><code>x['greeting]=({'hello}) /* where x is not an array
 value */<br>x.greeting /* => hello */</code></blockquote>
-
-<p>You can also bind code blocks to proxy objects to be used by all
-array, boolean, number, or string values.</p>
-
-<blockquote><code>@Array?=(') /* bind the array proxy to a unique object */<br>
-@Array['list]=({ $.target.join(", ") }) /* bind the list method */<br>
-$.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
@@ -503,7 +521,7 @@ matrix[0, 0] /* => 1 */ matrix['type] /* => identity */</code></blockquote>
 all array values as follows:</p>
 
 <blockquote><code>@Array?=(')
-@Array['</code><i>method_name</i><code>]=({</code>
+@Array.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>

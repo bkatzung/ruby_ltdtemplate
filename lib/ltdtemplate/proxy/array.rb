@@ -23,7 +23,9 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
     end.tap { |mod| include mod }
     include XKeys::Hash
 
+    # Evaluate supported array methods.
     def evaluate (opts = {})
+	# Methods supported for all proxied types.
 	case opts[:method]
 	when nil, 'call' then return @original
 	when 'class' then return 'Array'
@@ -47,6 +49,7 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	    end
 	end
 
+	# Methods supported by Array and Sarah objects.
 	case @original
 	when ::Array, Sarah
 	    case opts[:method]
@@ -61,10 +64,7 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	super opts
     end
 
-    #
-    # Access positional (sequential) or named (random-access)
-    # parts of the array
-    #
+    # Access named (random-access) parts of the data structure.
     def named
 	case @original
 	when Hash then @original
@@ -73,6 +73,7 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	end
     end
 
+    # Access positional (sequential) parts of the data structure.
     def positional
 	case @original
 	when ::Array then @original
@@ -81,6 +82,7 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	end
     end
 
+    # Reflect original respond_to? :push for XKeys.
     def respond_to? (method)
 	case method
 	when :push then @original.respond_to? :push
@@ -88,17 +90,17 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	end
     end
 
+    # The template text value is the concatenation of sequential text values.
     def tpl_text
 	self.positional.map { |val| rubyversed(val).tpl_text }.join ''
     end
 
-    def xkeys_new (*args); Sarah.new; end
+    # Return a new array (Sarah) for auto-vivification.
+    def xkeys_new (*args); @template.factory :array; end
 
     ############################################################
 
-    #
     # Loop over each key, value
-    #
     def do_each (opts)
 	results = @template.factory :array
 	if params = opts[:parameters] and params.size(:seq) > 0
@@ -127,9 +129,7 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	results
     end
 
-    #
-    # Combine array element values into a string
-    #
+    # Combine sequential array element values into a string
     def do_join (opts)
 	two = first = middle = last = ''
 	if params = opts[:parameters]
@@ -153,10 +153,12 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	end
     end
 
+    # Pop a value off the right end of the array.
     def do_pop (opts)
 	@original.respond_to?(:pop) ? @original.pop : nil
     end
 
+    # Push values onto the right end of the array.
     def do_push (opts)
 	if params = opts[:parameters]
 	    case @original
@@ -169,10 +171,12 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	nil
     end
 
+    # Shift a value off the left end of the array.
     def do_shift (opts)
 	@original.respond_to?(:shift) ? @original.shift : nil
     end
 
+    # Unshift values onto the left end of the array.
     def do_unshift (opts)
 	if params = opts[:parameters]
 	    case @original

@@ -5,10 +5,10 @@
 # @license MIT License
 
 require 'ltdtemplate/proxy'
-require 'ltdtemplate/value/regexp'
 
 class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 
+    # Evaluate supported methods for strings.
     def evaluate (opts = {})
 	case opts[:method]
 	when nil, 'call', 'str', 'string' then @original
@@ -26,7 +26,7 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 	when 'len', 'length' then @original.length
 	when 'pcte'
 	  meter(@original.gsub(/[^a-z0-9]/i) { |c| sprintf "%%%2x", c.ord })
-	when 'regexp' then LtdTemplate::Value::Regexp.new @template, @original
+	when 'regexp' then @template.factory :regexp, @original
 	when 'rep', 'rep1', 'replace', 'replace1' then do_replace opts
 	when 'rng', 'range', 'slc', 'slice' then do_range_slice opts
 	when 'split' then do_split opts
@@ -50,6 +50,7 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 
     ##################################################
 
+    # "Add" (concatenate) strings
     def do_add (opts)
 	combined = @original
 	if params = opts[:parameters]
@@ -62,6 +63,7 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 	meter combined
     end
 
+    # "Multiply" (repeat) strings
     def do_multiply (opts)
 	str = ''
 	if (params = opts[:parameters]) && params.size(:seq) > 0

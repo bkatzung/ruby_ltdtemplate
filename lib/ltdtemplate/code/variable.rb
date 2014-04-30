@@ -10,8 +10,7 @@ class LtdTemplate::Code::Variable < LtdTemplate::Code
 
     def initialize (template, name)
 	super template
-	case name[0]
-	when '@', '^'
+	if name.size > 1 && (name[0] == '@' || name[0] == '^')
 	    # @var is in the root namespace
 	    # ^var is in the parent namespace
 	    @modifier = name[0]
@@ -30,7 +29,7 @@ class LtdTemplate::Code::Variable < LtdTemplate::Code
     def evaluate (opts = {})
 	case opts[:method]
 	when '=', '?='
-	    if opts[:method] != '?=' || namespace().get_item(@name).nil?
+	    if opts[:method] != '?=' || self.namespace[@name].nil?
 		params = opts[:parameters]
 		params = params[0] if params.is_a? LtdTemplate::Univalue
 		self.namespace[@name] = params

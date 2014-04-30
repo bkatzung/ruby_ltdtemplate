@@ -8,7 +8,7 @@ require 'ltdtemplate'
 
 module LtdTemplate::Value
 
-    class Explicit_Block; end
+    class Code_Block; end
 
     # Classes that include this module are their own method handlers
     # and take the template as an initialization parameter.
@@ -44,7 +44,7 @@ module LtdTemplate::Value
     # The default method receiver is the result of evaluation.
     def receiver; self.evaluate; end
 
-    # Shortcut to template rubyversed.
+    # Shortcut to rubyversed in the template.
     def rubyversed (obj); @template.rubyversed(obj); end
 
     # Default boolean value is true
@@ -57,14 +57,15 @@ module LtdTemplate::Value
     # @param opts [Hash] A hash of method options.
     # @return [nil]
     def do_methods (opts)
-	params = opts[:parameters]
-	if params && params.size == 2
-	    runtime_methods[params[0]] = params[1]
+	if params = opts[:parameters]
+	    params.values(:seq).each_slice(2) do |pair|
+		return @runtime_methods[pair[0]] if pair.size == 1
+		if pair[1].nil? then @runtime_methods.delete pair[0]
+		else @runtime_methods[pair[0]] = pair[1]
+		end
+	    end
 	end
-	if params && params.size > 0
-	    runtime_methods[params[0]]
-	else nil
-	end
+	nil
     end
 
     # Try to execute run-time methods bound to the object or object
@@ -81,10 +82,10 @@ module LtdTemplate::Value
 		method = rubyversed(class_var).runtime_methods[name] if class_var
 	    end
 	end
-	if method.is_a? LtdTemplate::Value::Explicit_Block
+	if method.is_a? LtdTemplate::Value::Code_Block
 	    opts[:target] = self
 	    rubyversed(method).evaluate opts
-	elsif method then method
+	elsif !method.nil? then method
 	elsif mmproc = @template.options[:missing_method]
 	    mmproc.call(@template, self, opts)
 	else nil

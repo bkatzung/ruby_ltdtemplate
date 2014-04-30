@@ -28,7 +28,7 @@ class LtdTemplate::Code::Subscript < LtdTemplate::Code
     #
     # Return subscripts calculated from the supplied code blocks.
     #
-    def evaluate_subscripts (usage = false)
+    def evaluate_subscripts (meter = false)
 	subscripts = []
 	@subscripts.each do |code|
 	    subscript = rubyversed(code).evaluate
@@ -39,7 +39,7 @@ class LtdTemplate::Code::Subscript < LtdTemplate::Code
 	    end
 	end
 
-	if usage
+	if meter
 	    @template.using :subscript_depth, subscripts.size
 	    @template.use :subscripts, subscripts.size
 	end
@@ -54,8 +54,8 @@ class LtdTemplate::Code::Subscript < LtdTemplate::Code
     #
     # Return the target value, variable[sub1, ..., subN]
     #
-    def target (usage = false)
-	subscripts = evaluate_subscripts usage
+    def target (meter = false)
+	subscripts = evaluate_subscripts meter
 	if subscripts.empty? then rubyversed(@base).evaluate
 	else rubyversed(@base).evaluate.in_rubyverse(@template)[*subscripts, {}]
 	end

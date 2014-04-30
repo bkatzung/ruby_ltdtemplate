@@ -7,6 +7,7 @@
 require 'ltdtemplate'
 
 class LtdTemplate::Code
+
     # All derived classes are initialized with the template object and
     # handle their own template methods.
     extend LtdTemplate::Consumer
@@ -24,7 +25,7 @@ class LtdTemplate::Code
     # The default method receiver is the result of evaluation.
     def receiver; self.evaluate; end
 
-    # Shortcut to template rubyversed
+    # Shortcut to rubyversed in the template.
     def rubyversed (obj); @template.rubyversed(obj); end
 
 end

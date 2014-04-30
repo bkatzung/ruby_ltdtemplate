@@ -16,6 +16,7 @@ class LtdTemplate::Value::Regexp
 	@options = 0
     end
 
+    # Evaluate supported methods on pending Regexp objects.
     def evaluate (opts = {})
 	case opts[:method]
 	when nil, 'call'

@@ -8,6 +8,7 @@ require 'ltdtemplate/proxy'
 
 class LtdTemplate::Proxy::Boolean < LtdTemplate::Proxy
 
+    # Evaluate supported methods on boolean objects.
     def evaluate (opts = {})
 	case opts[:method]
 	when nil, 'call' then @original
@@ -21,7 +22,10 @@ class LtdTemplate::Proxy::Boolean < LtdTemplate::Proxy
 	end
     end
 
+    # The template boolean value is the same as the original boolean value.
     def tpl_boolean; @original; end
+
+    # Booleans have no textual value in templates.
     def tpl_text; ''; end
 
     ##################################################
