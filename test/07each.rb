@@ -10,7 +10,7 @@ class TestLtdTemplate_07 < MiniTest::Unit::TestCase
     def test_each
 	@tpl.parse <<'TPL'
 <<a=(1,2,3..'four,4,'five,5,'six,6,7,7)
-a.each({ $.*($.method,$_[0].type,$_[0],$_[1]).join(",") }).join(";")
+a.each({ $.*($.method,_[0].type,_[0],_[1]).join(",") }).join(";")
 .>>
 TPL
 	expected = {}
@@ -31,7 +31,7 @@ TPL
     def test_each_rnd
 	@tpl.parse <<'TPL'
 <<a=(1,2,3..'four,4,'five,5,'six,6,7,7)
-a.each_rnd({ $.*($.method,$_[0].type,$_[0],$_[1]).join(",") }).join(";")
+a.each_rnd({ $.*($.method,_[0].type,_[0],_[1]).join(",") }).join(";")
 .>>
 TPL
 	expected = {}
@@ -49,7 +49,7 @@ TPL
     def test_each_seq
 	@tpl.parse <<'TPL'
 <<a=(1,2,3..'four,4,'five,5,'six,6,7,7)
-a.each_seq({ $.*($.method,$_[0].type,$_[0],$_[1]).join(",") }).join(";")
+a.each_seq({ $.*($.method,_[0].type,_[0],_[1]).join(",") }).join(";")
 .>>
 TPL
 	expected = {}
