@@ -20,7 +20,7 @@ class LtdTemplate::Code::Sequence < LtdTemplate::Code
 
     # Evaluate the code sequence.
     def evaluate (opts = {})
-	values = @code.map { |code| rubyversed(code).evaluate }.flatten
+	values = @code.map { |code| rubyversed(code).evaluate }
 	case values.size
 	when 0 then nil
 	when 1 then values[0]

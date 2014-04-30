@@ -25,15 +25,17 @@ class LtdTemplate::Code::Call < LtdTemplate::Code
     # @param opts [Hash] Option hash
     # @option opts [String] :method A method to call on the return value
     def evaluate (opts = {})
-	# Evaluate the target code to get a method receiver
-	receiver = rubyversed(@target).receiver
-
 	# Increase the call count and call depth.
 	@template.use :calls
 	@template.use :call_depth
 
-	result = rubyversed(receiver).evaluate({ :method => @method,
+	# Invoke the method call that we encode against the target.
+	result = rubyversed(@target).evaluate({ :method => @method,
 	  :parameters => rubyversed(@parameters).evaluate })
+
+	# Invoke the method call requested by our invoker against the result.
+	result = rubyversed(result).evaluate({ :method => opts[:method],
+	  :parameters => opts[:parameters] }) if opts[:method]
 
 	# Decrease the call depth.
 	@template.use :call_depth, -1

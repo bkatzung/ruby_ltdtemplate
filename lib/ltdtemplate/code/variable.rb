@@ -52,8 +52,6 @@ class LtdTemplate::Code::Variable < LtdTemplate::Code
 	base.find_item(@name) || base
     end
 
-    def receiver; self; end
-
 end
 
 # END

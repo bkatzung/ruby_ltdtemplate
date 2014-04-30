@@ -41,9 +41,6 @@ module LtdTemplate::Value
 	"#<#{self.class.name}##{self.object_id} for #{@template.inspect}>"
     end
 
-    # The default method receiver is the result of evaluation.
-    def receiver; self.evaluate; end
-
     # Shortcut to rubyversed in the template.
     def rubyversed (obj); @template.rubyversed(obj); end
 

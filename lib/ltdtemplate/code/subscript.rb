@@ -47,10 +47,6 @@ class LtdTemplate::Code::Subscript < LtdTemplate::Code
 	subscripts
     end
 
-    # Subscripted variables are assignable, so defer evaluating
-    # the receiver.
-    def receiver; self; end
-
     #
     # Return the target value, variable[sub1, ..., subN]
     #
