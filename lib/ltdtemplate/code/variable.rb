@@ -35,7 +35,10 @@ class LtdTemplate::Code::Variable < LtdTemplate::Code
 		self.namespace[@name] = params
 	    end
 	    nil
-	else rubyversed(self.namespace[@name]).evaluate opts
+	else
+	    self.namespace[@name] = "" if
+	      opts[:method] == 'methods' && self.namespace[@name].nil?
+	    rubyversed(self.namespace[@name]).evaluate opts
 	end
     end
 

@@ -20,7 +20,7 @@ class LtdTemplate::Proxy::Regexp < LtdTemplate::Proxy
 		@template.using :string_length, str.size
 	    end
 	when 'type' then 'regexp'
-	else nil
+	else super opts
 	end
     end
 

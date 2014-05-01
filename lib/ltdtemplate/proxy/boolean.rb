@@ -35,7 +35,7 @@ class LtdTemplate::Proxy::Boolean < LtdTemplate::Proxy
     # True if ANY boolean is true. Evaluates {} blocks until true.
     def do_or (opts)
 	if !@original && (params = opts[:parameters])
-	    params.each(:seq) do |expr|
+	    params.each(:seq) do |idx, expr|
 		return true if rubyversed(expr).evaluate(:method => 'call').
 		  in_rubyverse(@template).tpl_boolean
 	    end
@@ -48,7 +48,7 @@ class LtdTemplate::Proxy::Boolean < LtdTemplate::Proxy
     # True if ALL booleans are true. Evaluates {} blocks until false.
     def do_and (opts)
 	if @original && (params = opts[:parameters])
-	    params.each(:seq) do |expr|
+	    params.each(:seq) do |idx, expr|
 		return false unless rubyversed(expr).
 		  evaluate(:method => 'call').in_rubyverse(@template).
 		  tpl_boolean
@@ -62,7 +62,7 @@ class LtdTemplate::Proxy::Boolean < LtdTemplate::Proxy
     # True if ALL booleans are false. Evaluates {} blocks until true.
     def do_not (opts)
 	if !@original && (params = opts[:parameters])
-	    params.each(:seq) do |expr|
+	    params.each(:seq) do |idx, expr|
 		return false if rubyversed(expr).
 		  evaluate(:method => 'call').in_rubyverse(@template).
 		  to_boolean

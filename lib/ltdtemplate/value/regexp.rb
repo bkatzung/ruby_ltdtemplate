@@ -31,11 +31,9 @@ class LtdTemplate::Value::Regexp
 	when 'str', 'string' then Regexp.new(@value, @options).to_s
 	when 'type' then 'regexp'
 	when '!' then self # Not compiled
-	else nil
+	else super opts
 	end
     end
-
-    def receiver; self; end
 
     def tpl_text; ''; end
 

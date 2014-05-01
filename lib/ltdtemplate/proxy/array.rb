@@ -134,7 +134,7 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	two = first = middle = last = ''
 	if params = opts[:parameters]
 	    if params.size(:seq) > 3
-		two, first, middle, last = params[0..3]
+		two, first, middle, last = params.values(:seq)[0..3]
 	    elsif params.size(:seq) > 0
 		two = first = middle = last = params[0]
 	    end

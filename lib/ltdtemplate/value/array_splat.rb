@@ -26,8 +26,6 @@ class LtdTemplate::Value::Array_Splat
 	end
     end
 
-    def receiver; self; end
-
     # Unlike arrays, these generate no template text.
     def tpl_text; ''; end
 
