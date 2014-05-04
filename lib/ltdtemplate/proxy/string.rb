@@ -27,8 +27,8 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 	when 'pcte'
 	  meter(@original.gsub(/[^a-z0-9]/i) { |c| sprintf "%%%2x", c.ord })
 	when 'regexp'
-	    if @template.options[:regexp] then Regexp.new @original
-	    else @original
+	    if @template.options[:regexp] then ::Regexp.new @original
+	    else nil
 	    end
 	when 'rep', 'rep1', 'replace', 'replace1' then do_replace opts
 	when 'rng', 'range', 'slc', 'slice' then do_range_slice opts
