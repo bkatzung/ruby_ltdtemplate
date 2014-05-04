@@ -26,7 +26,10 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 	when 'len', 'length' then @original.length
 	when 'pcte'
 	  meter(@original.gsub(/[^a-z0-9]/i) { |c| sprintf "%%%2x", c.ord })
-	when 'regexp' then @template.factory :regexp, @original
+	when 'regexp'
+	    if @template.options[:regexp] then Regexp.new @original
+	    else @original
+	    end
 	when 'rep', 'rep1', 'replace', 'replace1' then do_replace opts
 	when 'rng', 'range', 'slc', 'slice' then do_range_slice opts
 	when 'split' then do_split opts
@@ -166,9 +169,11 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
     # Split
     # str.split(pattern[, limit])
     def do_split (opts)
-	params = opts[:parameters] || []
-	@original.split(*params[0..1]).
-	  tap { |ary| ary.each { |str| meter str } }
+	if opts[:parameters]
+	    params = opts[:parameters].values(:seq)[0..1]
+	else params = []
+	end
+	@original.split(*params).tap { |ary| ary.each { |str| meter str } }
     end
 
 end

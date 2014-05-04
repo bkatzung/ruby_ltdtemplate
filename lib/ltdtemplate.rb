@@ -57,7 +57,6 @@ class LtdTemplate
 	:array_splat => 'LtdTemplate::Value::Array_Splat',
 	:code_block => 'LtdTemplate::Value::Code_Block',
 	:namespace => 'LtdTemplate::Value::Namespace',
-	:regexp => 'LtdTemplate::Value::Regexp',
 
 	#
 	# These proxies provide template methods for native values.
