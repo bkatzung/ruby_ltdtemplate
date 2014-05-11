@@ -85,7 +85,7 @@ class LtdTemplate::Value::Namespace < Sarah
     end
 
     # Implement conditionals
-    # $.if({test1}, {result1}, ..., {testN}, {resultN}, {else_value})
+    # $.if(\{test1}, \{result1}, ..., \{testN}, \{resultN}, \{else_value})
     def do_if (opts)
 	if params = opts[:parameters]
 	    params.values(:seq).each_slice(2) do |pair|
@@ -107,13 +107,14 @@ class LtdTemplate::Value::Namespace < Sarah
     end
 
     # Implement loops
-    # $.loop({pre_test}, {body})
-    # $.loop({pre_test}, {body}, {post_test})
+    # $.loop(\{pre_test}, \{body})
+    # $.loop(\{pre_test}, \{body}, \{post_test})
     def do_loop (opts)
 	results = @template.factory :array
 	if (params = opts[:parameters]) && params.size(:seq) > 1
 	    while rubyversed(params[0]).evaluate(:method => 'call').
 	      in_rubyverse(@template).tpl_boolean
+		# RESOURCE iterations: Total loop iterations
 		@template.use :iterations
 		results.push rubyversed(params[1]).evaluate :method => 'call'
 		break if params.size(:seq) > 2 && !rubyversed(params[2]).
@@ -131,6 +132,7 @@ class LtdTemplate::Value::Namespace < Sarah
 	  params.size(:seq) > 0
 	    name = params[0]
 	    if !tpl.used[name]
+		# RESOURCE use: Total $.use invocations
 		tpl.use :use
 		tpl.used[name] = true
 		result = loader.call(tpl, name)

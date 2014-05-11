@@ -1,3 +1,12 @@
+2014-05-07 Version 1.0.0
+
+	Major rewrite to work with native types proxied into a template
+	Rubyverse.
+
+	RESOURCES file now built from shell script find_resources.
+
+	Added support for regexp.match(string) and string.match(regexp).
+
 2013-08-04 Version 0.2.3
 
 	Documented LtdTemplate constructor options, including the new
@@ -27,7 +36,7 @@
 
 2013-07-28 Version 0.2.1
 
-	Added array.{each,each_rnd,each_seq} methods (executing the code
+	Added array.\{each,each_rnd,each_seq} methods (executing the code
 	block supplied as the first parameter with parameters key and
 	value).
 

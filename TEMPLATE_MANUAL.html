@@ -11,7 +11,7 @@ td:first-child, th:first-child { padding-left: 0.3em }
 </head>
 <body>
 <h1 id='top'>LtdTemplate Manual<br>
-<span style='font-size: smaller'>Version 1.0.0; 2014-04-27</span></h1>
+<span style='font-size: smaller'>Version 1.0.0; 2014-05-07</span></h1>
 
 <h2>Author(s)</h2>
 
@@ -425,7 +425,7 @@ value */<br>/* this syntax is no longer supported! */</code></blockquote>
 <li><a href='#nil_value'>Nil</a></li>
 <li><a href='#number_values'>Numbers</a></li>
 <li><a href='#string_values'>Strings</a></li>
-<li><a href='#regexp_values'>Regular Expressions</a></li>
+<li><a href='#regexp_values'>Regular Expressions And Matches</a></li>
 </ul>
 
 <h3 id='array_values'>Arrays</h3>
@@ -837,6 +837,12 @@ all numeric values as follows:</p>
 <tr><td><code>len</code>, <code>length</code></td>
     <td>Returns the length of the string</td></tr>
 
+<tr><td><code>match(</code><i>regexp</i><code>,
+  </code><i>offset</i><code>)</code></td><
+    <td>Match a string against a <a href='#regexp_values'>regular
+    expression</a>. Returns MatchData if the pattern matches, or nil
+    if it doesn't.</td></tr>
+
 <tr><td><code>pcte</code></td>
     <td>Returns the "percent encoding" of the string
     (for URI components; since 0.1.4)</td></tr>
@@ -923,13 +929,12 @@ all string values as follows:</p>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
 
-<h3 id='regexp_values'>Regular Expressions</h3>
+<h3 id='regexp_values'>Regular Expressions And Matches</h3>
 
 <p>"<a href='http://en.wikipedia.org/wiki/Regular_expression'>Regular
 expressions</a>" ("regex" or "regexp" for short) in LtdTemplate are
-specially enhanced, "magic strings". They behave like regular strings
-unless used in a method call that is able to use them as a regular
-expression.</p>
+generated from <a href='#string_values'>string values</a> using the
+<code>regexp</code> method.</p>
 
 <p>Regular expressions must be enabled by the calling program. See
 the gem documentation for details.</p>
@@ -948,6 +953,12 @@ the gem documentation for details.</p>
 
 <tr><td><code>ext, extended</code></td>
      <td>Allow white space and comments in the pattern</td></tr>
+
+<tr><td><code>match(</code><i>string</i><code>,
+  </code><i>offset</i><code>)</code></td>
+    <td>Match a <a href='#string_values'>string</a> against a regular
+    expression. Returns MatchData if the pattern matches, or nil if it
+    doesn't.</td></tr>
 
 <tr><td><code>multi, multiline</code></td>
     <td>Makes <code>.</code> match newlines too</td></tr>

@@ -1,49 +1,18 @@
-Resource Usage/Limit Summary
-
-array
-    Total number of arrays created
-    (proxy/array.rb)
-
-array_growth (since 1.0.0)
-    Increases in array sizes
-    (code/parameters.rb, proxy/array.rb)
-
-array_size
-    Size of largest modified array
-    (proxy/array.rb)
-
-call_depth
-    The current method call depth
-    (code/call.rb)
-
-calls
-    The total number of method calls
-    (code/call.rb)
-
-code_steps
-    Total number of code steps executed
-    (code/sequence.rb)
-
-iterations
-    Total loop iterations
-    (value/namespace.rb)
-
-string_length
-    Length of longest modified string
-    (code/sequence.rb, proxy/array.rb, proxy/regexp.rb, proxy/string.rb)
-
-string_total
-    Combined length of computed strings
-    (proxy/array.rb, proxy/regexp.rb, proxy/string.rb)
-
-subscript_depth
-    Deepest subsubscript depth
-    (code/subscript.rb)
-
-subscripts
-    Total number of subscripts
-    (code/subscript.rb)
-
-use
-    Total $.use invocations
-    (value/namespace.rb)
+array (proxy/array.rb): Total number of arrays created
+array_growth (code/parameters.rb): Increases in array sizes
+array_growth (proxy/array.rb): Increases in array sizes
+array_size (proxy/array.rb): Size of largest modified array
+call_depth (code/call.rb): The current method call depth
+calls (code/call.rb): Total number of method calls
+code_steps (code/sequence.rb): Total number of code steps executed
+iterations (value/namespace.rb): Total loop iterations
+string_length (code/sequence.rb): Length of longest modified string
+string_length (proxy/array.rb): Length of longest modified string
+string_length (proxy/regexp.rb): Length of longest modified string
+string_length (proxy/string.rb): Length of longest modified string
+string_total (proxy/array.rb): Combined length of computed strings
+string_total (proxy/regexp.rb): Combined length of computed strings
+string_total (proxy/string.rb): Combined length of computed strings
+subscript_depth (code/subscript.rb): Deepest subscript depth
+subscripts (code/subscript.rb): Total number of subscripts
+use (value/namespace.rb): Total $.use invocations

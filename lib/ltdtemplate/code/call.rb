@@ -26,19 +26,21 @@ class LtdTemplate::Code::Call < LtdTemplate::Code
     # @option opts [String] :method A method to call on the return value
     def evaluate (opts = {})
 	# Increase the call count and call depth.
+	# RESOURCE calls: Total number of method calls
 	@template.use :calls
+	# RESOURCE call_depth: The current method call depth
 	@template.use :call_depth
 
 	# Invoke the method call that we encode against the target.
 	result = rubyversed(@target).evaluate({ :method => @method,
 	  :parameters => rubyversed(@parameters).evaluate })
 
+	# Decrease the call depth.
+	@template.use :call_depth, -1
+
 	# Invoke the method call requested by our invoker against the result.
 	result = rubyversed(result).evaluate({ :method => opts[:method],
 	  :parameters => opts[:parameters] }) if opts[:method]
-
-	# Decrease the call depth.
-	@template.use :call_depth, -1
 
 	result
     end

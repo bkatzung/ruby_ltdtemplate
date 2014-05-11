@@ -20,11 +20,17 @@ class LtdTemplate::Code::Sequence < LtdTemplate::Code
 
     # Evaluate the code sequence.
     def evaluate (opts = {})
-	values = @code.map { |code| rubyversed(code).evaluate }
+	values = @code.map do |code|
+	    # RESOURCE code_steps: Total number of code steps executed
+	    @template.use :code_steps
+	    rubyversed(code).evaluate
+	end
 	case values.size
 	when 0 then nil
 	when 1 then values[0]
-	else values.map { |val| rubyversed(val).tpl_text }.join ''
+	else values.map { |val| rubyversed(val).tpl_text }.join('').
+	  tap { |res| @template.using :string_length, res.length }
+	  # RESOURCE string_length: Length of longest modified string
 	end
     end
 

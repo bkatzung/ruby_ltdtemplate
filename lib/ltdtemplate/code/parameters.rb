@@ -34,8 +34,13 @@ class LtdTemplate::Code::Parameters < LtdTemplate::Code
 	    value = rubyversed(code).evaluate
 	    if value.is_a? LtdTemplate::Value::Array_Splat
 		# Merge parameters from array/ or array%
+		# RESOURCE array_growth: Increases in array sizes
+		@template.use :array_growth, value.positional.size
 		params.concat value.positional
-		params.set_pairs *value.named if value.named
+		if value.named
+		    @template.use :array_growth, value.named.size / 2
+		    params.set_pairs *value.named
+		end
 	    else params.push value
 	    end
 	end

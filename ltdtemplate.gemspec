@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name         = "ltdtemplate"
   s.version      = "1.0.0"
-  s.date         = "2014-04-27"
+  s.date         = "2014-05-07"
   s.authors      = ["Brian Katzung"]
   s.email        = ["briank@kappacs.com"]
   s.homepage     = "http://rubygems.org/gems/ltdtemplate"

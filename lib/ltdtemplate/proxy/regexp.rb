@@ -20,7 +20,9 @@ class LtdTemplate::Proxy::Regexp < LtdTemplate::Proxy
 	when 'class' then return 'Regexp'
 	when 'str', 'string'
 	    return @original.to_s.tap do |str|
+		# RESOURCE string_total: Combined length of computed strings
 		@template.use :string_total, str.size
+		# RESOURCE string_length: Length of longest modified string
 		@template.using :string_length, str.size
 	    end
 	when 'type' then return 'regexp'
@@ -41,6 +43,7 @@ class LtdTemplate::Proxy::Regexp < LtdTemplate::Proxy
 		else return ::Regexp.new(@original.source,
 		  @original.options | ::Regexp::EXTENDED)
 		end
+	    when 'match' then return do_match opts
 	    when 'multi', 'multiline'
 		if (@original.options & ::Regexp::MULTILINE) != 0
 		    return @original
@@ -54,6 +57,17 @@ class LtdTemplate::Proxy::Regexp < LtdTemplate::Proxy
     end
 
     def tpl_text; ''; end
+
+    ##################################################
+
+    def do_match (opts)
+	if (params = opts[:parameters]) && params.size(:seq) > 0 &&
+	  params[0].is_a?(::String)
+	    # Track array size generated??
+	    @original.match(*params[0..1].values)
+	else nil
+	end
+    end
 
 end
 

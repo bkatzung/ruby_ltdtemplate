@@ -49,6 +49,9 @@ class LtdTemplate
     # @@classes contains the default factory classes. These can be overridden
     # globally using the #set_classes class method or per-template using the
     # #set_classes instance method.
+    #
+    # NOTE: Factory types are also used for resource tracking, and therefore
+    # must be unique among resource usage symbols.
     @@classes = {
 	#
 	# These represent storable values.
@@ -63,6 +66,7 @@ class LtdTemplate
 	#
 	:array_proxy => 'LtdTemplate::Proxy::Array',
 	:boolean_proxy => 'LtdTemplate::Proxy::Boolean',
+	:match_proxy => 'LtdTemplate::Proxy::Match',
 	:nil_proxy => 'LtdTemplate::Proxy::Nil',
 	:number_proxy => 'LtdTemplate::Proxy::Number',
 	:regexp_proxy => 'LtdTemplate::Proxy::Regexp',
@@ -87,6 +91,7 @@ class LtdTemplate
 	'Array' => :array_proxy,
 	'FalseClass' => :boolean_proxy,
 	'Hash' => :array_proxy,
+	'MatchData' => :match_proxy,
 	'NilClass' => :nil_proxy,
 	'Numeric' => :number_proxy,
 	'Regexp' => :regexp_proxy,
@@ -152,6 +157,8 @@ class LtdTemplate
     # @param options [Hash] Options hash
     # @option options [Proc] :loader Callback for $.use method
     # @option options [Proc] :missing_method Callback for missing methods
+    # @option options [Boolean] :regexp Set to true to enable regular
+    #  expression processing
     def initialize (options = {})
 	@classes, @proxies = {}, {}
 	@code, @namespace = nil, nil

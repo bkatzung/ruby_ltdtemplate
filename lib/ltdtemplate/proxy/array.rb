@@ -37,14 +37,16 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	when '/' 
 	  return @template.factory(:array_splat, self.positional,
 	    self.named.to_a.flatten(1)).tap do |splat|
-	    @template.use :array
-	    @template.using :array_size, (splat.positional.size +
-	      splat.named.size)
+	    size = splat.positional.size + splat.named.size
+	    # RESOURCE array_growth: Increases in array sizes
+	    @template.use :array_growth, size
+	    # RESOURCE array_size: Size of largest modified array
+	    @template.using :array_size, size
 	    end
 	when '%' 
 	  return @template.factory(:array_splat, [],
 	    self.positional).tap do |splat|
-	    @template.use :array
+	    @template.use :array_growth, splat.named.size
 	    @template.using :array_size, splat.named.size
 	    end
 	end
@@ -64,11 +66,35 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	super opts
     end
 
+    # Meter usage when modifying the array.
+    #
+    # @param node [Array,Hash,Sarah] The array being updated.
+    # @param key [Object] The index/key being added/updated.
+    def meter (node, key)
+	case node
+	when ::Array
+	    if key == :[] then growth = 1	# (push)
+	    elsif key > node.size then growth = key - node.size
+	    else growth = 0			# existing index
+	    end
+	when Hash, Sarah
+	    growth = node.has_key?(key) ? 0 : 1
+	end
+	@template.use :array_growth, growth if growth > 0
+	@template.using :array_size, node.size + growth
+    end
+
     # Access named (random-access) parts of the data structure.
     def named
 	case @original
 	when Hash then @original
-	when Sarah then @original.to_h :nsq
+	when Sarah
+	    # RESOURCE array: Total number of arrays created
+	    @template.use :array
+	    size = @original.size :nsq
+	    @template.use :array_growth, size
+	    @template.using :array_size, size
+	    @original.to_h :nsq
 	else {}
 	end
     end
@@ -77,15 +103,20 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
     def positional
 	case @original
 	when ::Array then @original
-	when Sarah then @original.values :seq
+	when Sarah
+	    @template.use :array
+	    size = @original.size :seq
+	    @template.use :array_growth, size
+	    @template.using :array_size, size
+	    @original.values :seq
 	else []
 	end
     end
 
-    # Reflect original respond_to? :push for XKeys.
+    # Reflect original respond_to? :push, etc. for XKeys.
     def respond_to? (method)
 	case method
-	when :push then @original.respond_to? :push
+	when :[], :[]=, :fetch, :push then @original.respond_to? method
 	else super method
 	end
     end
@@ -96,7 +127,15 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
     end
 
     # Return a new array (Sarah) for auto-vivification.
-    def xkeys_new (*args); @template.factory :array; end
+    def xkeys_new (k2, info, opts)
+	meter info[:node], info[:key1]
+	@template.factory :array
+    end
+
+    # Check array growth on final assignment
+    def xkeys_on_final (node, key, value)
+	meter node, key
+    end
 
     ############################################################
 
@@ -134,7 +173,7 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	two = first = middle = last = ''
 	if params = opts[:parameters]
 	    if params.size(:seq) > 3
-		two, first, middle, last = params.values(:seq)[0..3]
+		two, first, middle, last = params[0..3].values
 	    elsif params.size(:seq) > 0
 		two = first = middle = last = params[0]
 	    end
@@ -148,43 +187,68 @@ class LtdTemplate::Proxy::Array < LtdTemplate::Proxy
 	else "#{text[0]}#{first}" + text[1..-2].join(middle) +
 	  "#{last}#{text[-1]}"
 	end.tap do |str|
+	    # RESOURCE string_total: Combined length of computed strings
 	    @template.use :string_total, str.size
+	    # RESOURCE string_length: Length of longest modified string
 	    @template.using :string_length, str.size
 	end
     end
 
     # Pop a value off the right end of the array.
     def do_pop (opts)
-	@original.respond_to?(:pop) ? @original.pop : nil
+	if @original.respond_to? :pop
+	    @template.use :array_growth, -1
+	    @original.pop
+	else nil
+	end
     end
 
     # Push values onto the right end of the array.
     def do_push (opts)
 	if params = opts[:parameters]
 	    case @original
-	    when ::Array then @original.push *params.values(:seq)
-	    when Sarah then @original.append! params
-	    end.tap do |res|
-		@template.using res.size if res.respond_to? :size
+	    when ::Array
+		@template.use :array_growth, params.size(:seq)
+		@original.push *params.values(:seq)
+	    when Sarah
+		# Assume worst-case growth, then "push"
+		@template.use :array_growth, params.size
+		adjust = @original.size + params.size
+		@original.append! params
+
+		# Adjust actual growth if needed
+		adjust = @original.size - adjust
+		@template.use :array_growth, adjust if adjust < 0
 	    end
+	    @template.using :array_size, @original.size
 	end
 	nil
     end
 
     # Shift a value off the left end of the array.
     def do_shift (opts)
-	@original.respond_to?(:shift) ? @original.shift : nil
+	if @original.respond_to? :shift
+	    @template.use :array_growth, -1
+	    @original.shift
+	else nil
+	end
     end
 
     # Unshift values onto the left end of the array.
     def do_unshift (opts)
 	if params = opts[:parameters]
 	    case @original
-	    when ::Array then @original.unshift *params.values(:seq)
-	    when Sarah then @original.insert! params
-	    end.tap do |res|
-		@template.using res.size if res.respond_to? :size
+	    when ::Array
+		@template.use :array_growth, params.size(:seq)
+		@original.unshift *params.values(:seq)
+	    when Sarah
+		@template.use :array_growth, params.size
+		adjust = @original.size + params.size
+		@original.insert! params
+		adjust = @original.size - adjust
+		@template.use :array_growth, adjust if adjust < 0
 	    end
+	    @template.using :array_size, @original.size
 	end
 	nil
     end

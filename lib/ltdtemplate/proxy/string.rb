@@ -5,6 +5,7 @@
 # @license MIT License
 
 require 'ltdtemplate/proxy'
+require 'sarah'
 
 class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 
@@ -24,6 +25,7 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 	when 'int' then @original.to_i
 	when 'join' then do_join opts
 	when 'len', 'length' then @original.length
+	when 'match' then do_match opts
 	when 'pcte'
 	  meter(@original.gsub(/[^a-z0-9]/i) { |c| sprintf "%%%2x", c.ord })
 	when 'regexp'
@@ -44,8 +46,10 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 
     # Meter string resource usage
     def meter (str)
-	@template.using :string_length, str.size
+	# RESOURCE string_total: Combined length of computed strings
 	@template.use :string_total, str.size
+	# RESOURCE string_length: Length of longest modified string
+	@template.using :string_length, str.size
 	str
     end
 
@@ -66,6 +70,16 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 	meter combined
     end
 
+    # Match a regular expression
+    def do_match (opts)
+	if (params = opts[:parameters]) && params.size(:seq) > 0 &&
+	  params[0].is_a?(::Regexp)
+	    params[0].in_rubyverse(@template).evaluate :method => 'match',
+	      :parameters => Sarah[ @original, *params[1..-1].values ]
+	else nil
+	end
+    end
+
     # "Multiply" (repeat) strings
     def do_multiply (opts)
 	str = ''
@@ -77,6 +91,7 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 		    str = str.reverse
 		    times = -times
 		end
+		@template.use :string_total, (str.length * times)
 		@template.using :string_length, (str.length * times)
 		str = str * times
 	    end
@@ -142,7 +157,7 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
 	params = opts[:parameters]
 	op1 = params[0] if params && params.size(:seq) > 0
 	op2 = params[1] if params && params.size(:seq) > 1
-	if opts[:method][0] == 'r' or op2 < 0
+	if opts[:method][0] == 'r' || op2 < 0
 	    str = @original[op1..op2]
 	else str = @original[op1, op2]
 	end
@@ -170,7 +185,7 @@ class LtdTemplate::Proxy::String < LtdTemplate::Proxy
     # str.split(pattern[, limit])
     def do_split (opts)
 	if opts[:parameters]
-	    params = opts[:parameters].values(:seq)[0..1]
+	    params = opts[:parameters][0..1].values
 	else params = []
 	end
 	@original.split(*params).tap { |ary| ary.each { |str| meter str } }

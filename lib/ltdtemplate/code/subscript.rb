@@ -34,14 +34,20 @@ class LtdTemplate::Code::Subscript < LtdTemplate::Code
 	    subscript = rubyversed(code).evaluate
 	    case subscript
 	    when LtdTemplate::Value::Array_Splat
+		if meter && (size = subscript.positional.size) > 1
+		    # RESOURCE subscripts: Total number of subscripts
+		    # RESOURCE subscript_depth: Deepest subscript depth
+		    @template.use :subscripts, size - 1
+		    @template.using :subscript_depth, size
+		end
 		subscripts.concat subscript.positional
 	    when Numeric, String then subscripts << subscript
 	    end
 	end
 
 	if meter
+	    @template.use :subscripts, @subscripts.size
 	    @template.using :subscript_depth, subscripts.size
-	    @template.use :subscripts, subscripts.size
 	end
 
 	subscripts
