@@ -17,6 +17,7 @@ class LtdTemplate::Proxy::Match < LtdTemplate::Proxy
 	when nil, 'call' then @original
 	when 'begin', 'end', 'offset' then do_offset opts
 	when 'class' then 'Match'
+	when 'length', 'size' then @original.size
 	when 'type' then 'match'
 	end
     end

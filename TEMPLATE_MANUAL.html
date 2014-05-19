@@ -377,9 +377,8 @@ binding will actually delete any existing binding for the given name.</p>
 class of values. For convenience, binding to an unset variable automatically
 causes the variable to be set to an empty string.</p>
 
-<blockquote><code>@Array?=(') /* bind the Array proxy to a unique object */<br>
-/* since 1.0.0 the preceding step is performed automatically<br>
-by the following step and can be omitted */<br>
+<blockquote><code>@Array?=(') /* bind the Array proxy to a unique object
+(before 1.0.0) */<br>
 @Array.methods('list, { $.target.join(", ") }) /* bind the list method */<br>
 $.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
 
@@ -975,6 +974,42 @@ all regular expression values as follows:</p>
 
 <blockquote><code>@Regexp.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})</code></blockquote>
+
+<p>Regular expression match-result methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>[</code><i>index</i><code>]</code></td>
+    <td>Returns the entire (index 0) or specific sub-pattern match.</td></tr>
+
+<tr><td><code>[</code><i>name</i><code>]</code></td>
+    <td>Returns the named sub-pattern match.</td></tr>
+
+<tr><td><code>begin(</code><i>n</i><code>)</code></td>
+    <td>Returns the offset of the start of the <i>nth</i> match array
+    in the string (numeric index or named sub-match).</td></tr>
+
+<tr><td><code>class</code></td>
+    <td>Returns the string "Match".</td></tr>
+
+<tr><td><code>end(</code><i>n</i><code>)</code></td>
+    <td>Returns the offset of the character immediately following the
+    <i>nth</i> match in the string (numeric index or named
+    sub-match).</td></tr>
+
+<tr><td><code>length</code>, <code>size</code></td>
+    <td>Returns the size of the match results array.</td></tr>
+
+<tr><td><code>offset(</code><i>n</i><code>)</code></td>
+    <td>Returns the <code>begin</code> and <code>end</code> values in a
+    two-element array.</td></tr>
+
+<tr><td><code>type</code></td>
+    <td>Returns the string "match".</td></tr>
+
+</table>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
 
