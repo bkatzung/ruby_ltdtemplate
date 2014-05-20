@@ -1,32 +1,18 @@
-Resource Usage/Limit Summary
-
-arrays
-    The total number of arrays created
-
-array_size
-    The size of the largest array
-
-call_depth
-    The current/maximum call depth
-
-calls
-    The total number of calls made
-
-iterations
-    The total number of loop iterations
-
-regexp (limit)
-    A string may only be converted to a regexp if limit regexp
-    is set to false before rendering
-
-string_length
-    The combined total length of strings created
-
-subscript_depth
-    The maximum subsubscript depth
-
-subscripts
-    The total number of subscripts
-
-use
-    The total number of "$.use" calls
+array (proxy/array.rb): Total number of arrays created
+array_growth (code/parameters.rb): Increases in array sizes
+array_growth (proxy/array.rb): Increases in array sizes
+array_size (proxy/array.rb): Size of largest modified array
+call_depth (code/call.rb): The current method call depth
+calls (code/call.rb): Total number of method calls
+code_steps (code/sequence.rb): Total number of code steps executed
+iterations (value/namespace.rb): Total loop iterations
+string_length (code/sequence.rb): Length of longest modified string
+string_length (proxy/array.rb): Length of longest modified string
+string_length (proxy/regexp.rb): Length of longest modified string
+string_length (proxy/string.rb): Length of longest modified string
+string_total (proxy/array.rb): Combined length of computed strings
+string_total (proxy/regexp.rb): Combined length of computed strings
+string_total (proxy/string.rb): Combined length of computed strings
+subscript_depth (code/subscript.rb): Deepest subscript depth
+subscripts (code/subscript.rb): Total number of subscripts
+use (value/namespace.rb): Total $.use invocations

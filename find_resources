@@ -1,0 +1,6 @@
+#!/bin/bash
+
+find lib/ltdtemplate -name '*.rb' -print |
+xargs grep '# RESOURCE' |
+sed -e 's/lib.ltdtemplate.\([^:]*\):.*# RESOURCE \([^:]*\):/\2 (\1):/' |
+LANG=C sort

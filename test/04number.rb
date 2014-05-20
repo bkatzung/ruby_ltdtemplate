@@ -7,13 +7,6 @@ class TestLtdTemplate_04 < MiniTest::Unit::TestCase
 	@tpl = LtdTemplate.new
     end
 
-    def test_imethods
-	num = @tpl.factory :number
-	[
-	    :get_value, :to_boolean, :to_native, :to_text
-	].each { |method| assert_respond_to num, method }
-    end
-
     def test_basic
 	@tpl.parse '<<1>>'
 	assert_equal("1", @tpl.render, "literal")

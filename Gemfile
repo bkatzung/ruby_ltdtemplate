@@ -1,4 +1,5 @@
 source "https://rubygems.org"
 
-gem "sarah", "~> 0.0.2"
+gem "rubyverse", "~> 0.0.1"
+gem "sarah", "~> 2.0.0"
 gem "htmlentities", "~> 4.3.1"

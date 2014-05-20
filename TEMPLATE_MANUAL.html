@@ -11,7 +11,7 @@ td:first-child, th:first-child { padding-left: 0.3em }
 </head>
 <body>
 <h1 id='top'>LtdTemplate Manual<br>
-<span style='font-size: smaller'>Version 0.2.2; July 29, 2013</span></h1>
+<span style='font-size: smaller'>Version 1.0.0; 2014-05-07</span></h1>
 
 <h2>Author(s)</h2>
 
@@ -100,8 +100,8 @@ themselves.</p>
 <li><a href='#assignment_syntax'>Assignments</a></li>
 <li><a href='#predefined_vars'>Pre-Defined Variables</a></li>
 <li><a href='#codeseq_syntax'>Code Sequences</a></li>
-<li><a href='#codeblock_syntax'>Code Blocks</a></li>
-<li><a href='#subscript_syntax'>Subscripts And Code-Block Bindings</a></li>
+<li><a href='#codeblock_syntax'>Code Blocks And Bindings</a></li>
+<li><a href='#subscript_syntax'>Subscripts</a></li>
 </ul>
 
 <h3 id='comment_syntax'>Comments</h3>
@@ -190,8 +190,8 @@ digits.</p>
 
 <blockquote><code>0.125 1 -2 3.0 -4.5</code></blockquote>
 
-<p>LtdTemplate does not support numeric literals in scientific notation
-or bases other than ten.</p>
+<p>LtdTemplate does not currently support numeric literals in scientific
+notation or bases other than ten.</p>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
@@ -269,10 +269,12 @@ if not immediately preceded by punctuation.</p>
 
 <h3 id='assignment_syntax'>Assignments</h3>
 
-<p>Variables support two assignment method calls: unconditional
-(<code>=</code>) and conditional (<code>?=</code>). A conditional
-assignment does nothing if the variable is already bound to (holds a
-reference to) a value (including the nil value). Assignments do not
+<p>Variables (and array subscripts, covered later) support two assignment
+method calls: unconditional (<code>=</code>) and conditional
+(<code>?=</code>). A conditional assignment does nothing if the variable is
+already bound to (holds a reference to) a value other than the nil
+value. (This is a change from versions prior to 1.0.0; in those versions
+even a nil value prevented a conditional assignment.) Assignments do not
 render in the template output.</p>
 
 <p>If called with a single parameter and no "dot dot" symbol, the value of
@@ -310,11 +312,11 @@ others will be created in the current namespace.</p>
     destroyed when the code block completes.</td></tr>
 
 <tr><td><code>^</code></td>
-    <td>This variable refers to the previous namespace if there is one,
-    or <a href='#nil_value'>nil</a> if there isn't.</td></tr>
+    <td>This variable refers to the previous (parent) namespace if there
+    is one, or <a href='#nil_value'>nil</a> if there isn't.</td></tr>
 
 <tr><td><code>@</code></td>
-    <td>This variable refers to the first (also known as "root" or
+    <td>This variable refers to the first (also known as the "root" or
     "top-level") namespace.</td></tr>
 
 <tr><td><code>_</code></td>
@@ -333,20 +335,20 @@ expressions. <a href='#template_syntax'>Templates</a>,
 <a href='#call_syntax'>method call</a> parameters, and
 <a href='#codeblock_syntax'>code block</a> bodies are all code sequences.</p>
 
-<p>If a code sequence consists of a single, non-string value and does
-not constitute the entire template code, it is retained as-is. Otherwise,
-the string value of each element in the sequence, if any, is combined to
+<p>If a code sequence consists of a single value and does not constitute
+the entire template code, it is retained as-is. Otherwise, the string
+value of each element in the sequence, if any, is combined to
 produce the result of the code sequence.</p>
 
 <blockquote><code>'Hello $.true ", " num=(5) num-(4) " world!"<br>
-/* 5 and 4 are single, non-string values in their code sequences */<br>
+/* 5 and 4 are single values in their code sequences */<br>
 /* $.true and num=(5) render nothing */<br>
 /* num-(4) returns the number 1 but it's string value gets used */<br>
 /* => Hello, 1 world! */</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
-<h3 id='codeblock_syntax'>Code Blocks</h3>
+<h3 id='codeblock_syntax'>Code Blocks And Bindings</h3>
 
 <p>If you surround a <a href='#codeseq_syntax'>code sequence</a>
 by braces (<code>{</code> and <code>}</code>), you create a code
@@ -358,9 +360,34 @@ the code sequence within the code block.</p>
 render_method.hi " " render_method.there
 /* => hi there */</code></blockquote>
 
+<p>Code blocks (or other values) may be bound to values using the
+<code>methods</code> method and subsequently called like
+<a href='#call_syntax'>methods</a>.
+
+<p>The <code>methods</code> method takes any number of name-and-binding
+pairs to be added or updated. If there are an odd number of parameters
+(i.e. there is a final name without a binding), the existing binding, if any,
+associated with that name is returned. Specifying nil ($.nil) as the
+binding will actually delete any existing binding for the given name.</p>
+
+<blockquote><code>@.methods('greet,{"Hello, "_[0]"."})<br>
+@.greet('Dave) /* => Hello, Dave. */</code></blockquote>
+
+<p>You can also bind code blocks to proxy objects to be used by an entire
+class of values. For convenience, binding to an unset variable automatically
+causes the variable to be set to an empty string.</p>
+
+<blockquote><code>@Array?=(') /* bind the Array proxy to a unique object
+(before 1.0.0) */<br>
+@Array.methods('list, { $.target.join(", ") }) /* bind the list method */<br>
+$.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
+
+<p>Methods added this way are only called if there is no standard method
+with the same name.</p>
+
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
-<h3 id='subscript_syntax'>Subscripts And Code-Block Bindings</h3>
+<h3 id='subscript_syntax'>Subscripts</h3>
 
 <p>Any expression that evaluates to an array (or tree of nested arrays)
 may be subscripted to select a particular value or nested array from the
@@ -377,20 +404,13 @@ array_var['items][5] /* as above - alternate syntax */</code></blockquote>
 <p>If the requested item does not exist, the special value
 "<a href='#nil_value'>nil</a>" is used instead.</p>
 
-<p>LtdTemplate also uses subscript syntax to bind
-<a href='#codeblock_syntax'>code blocks</a> to non-array values. These can
-subsequently be called like <a href='#call_syntax'>methods</a>. They
-never override standard methods.</p>
+<p>Prior to version 1.0.0, subscript syntax could also be used to bind
+<a href='#codeblock_syntax'>code blocks</a> to non-array values. The syntax
+is shown here for historical reference but is <strong>no longer
+supported</strong>:</p>
 
 <blockquote><code>x['greeting]=({'hello}) /* where x is not an array
-value */<br>x.greeting /* => hello */</code></blockquote>
-
-<p>You can also bind code blocks to proxy objects to be used by all
-array, boolean, number, or string values.</p>
-
-<blockquote><code>@Array?=(') /* bind the array proxy to a unique object */<br>
-@Array['list]=({ $.target.join(", ") }) /* bind the list method */<br>
-$.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
+value */<br>/* this syntax is no longer supported! */</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#code_syntax'>Template Code Syntax</a>]</p>
 
@@ -404,7 +424,7 @@ $.*(1, 2, 3).list /* => 1, 2, 3 */</code></blockquote>
 <li><a href='#nil_value'>Nil</a></li>
 <li><a href='#number_values'>Numbers</a></li>
 <li><a href='#string_values'>Strings</a></li>
-<li><a href='#regexp_values'>Regular Expressions</a></li>
+<li><a href='#regexp_values'>Regular Expressions And Matches</a></li>
 </ul>
 
 <h3 id='array_values'>Arrays</h3>
@@ -502,8 +522,7 @@ matrix[0, 0] /* => 1 */ matrix['type] /* => identity */</code></blockquote>
 <p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
 all array values as follows:</p>
 
-<blockquote><code>@Array?=(')
-@Array['</code><i>method_name</i><code>]=({</code>
+<blockquote><code>@Array.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
@@ -553,11 +572,11 @@ empty strings, are treated as true).</p>
 for true, false, or both boolean
 values as follows:</p>
 
-<blockquote><code>$.true['</code><i>method_name</i><code>]=({</code>
+<blockquote><code>$.true.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})<br>
-$.false['</code><i>method_name</i><code>]=({</code>
+$.false.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})<br>
-@Boolean?=(') @Boolean['</code><i>method_name</i><code>]=({</code>
+@Boolean.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
@@ -657,6 +676,12 @@ programming environments.</p>
 
 </table>
 
+<p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
+all namespaces as follows:</p>
+
+<blockquote><code>@Namespace.methods('</code><i>method_name</i><code>, {</code>
+<i>code sequence</i> <code>})</code></blockquote>
+
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
 
 <h3 id='nil_value'>Nil</h3>
@@ -678,7 +703,7 @@ value. It can be accessed via the namespace method call
 <p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods
 for the nil value as follows:</p>
 
-<blockquote><code>$.nil['</code><i>method_name</i><code>]=({</code>
+<blockquote><code>$.nil.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
@@ -762,8 +787,7 @@ for the nil value as follows:</p>
 <p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
 all numeric values as follows:</p>
 
-<blockquote><code>@Number?=(')
-@Number['</code><i>method_name</i><code>]=({</code>
+<blockquote><code>@Number.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
@@ -811,6 +835,12 @@ all numeric values as follows:</p>
 
 <tr><td><code>len</code>, <code>length</code></td>
     <td>Returns the length of the string</td></tr>
+
+<tr><td><code>match(</code><i>regexp</i><code>,
+  </code><i>offset</i><code>)</code></td><
+    <td>Match a string against a <a href='#regexp_values'>regular
+    expression</a>. Returns MatchData if the pattern matches, or nil
+    if it doesn't.</td></tr>
 
 <tr><td><code>pcte</code></td>
     <td>Returns the "percent encoding" of the string
@@ -893,19 +923,17 @@ all numeric values as follows:</p>
 <p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
 all string values as follows:</p>
 
-<blockquote><code>@String?=(')
-@String['</code><i>method_name</i><code>]=({</code>
+<blockquote><code>@String.methods('</code><i>method_name</i><code>, {</code>
 <i>code sequence</i> <code>})</code></blockquote>
 
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
 
-<h3 id='regexp_values'>Regular Expressions</h3>
+<h3 id='regexp_values'>Regular Expressions And Matches</h3>
 
 <p>"<a href='http://en.wikipedia.org/wiki/Regular_expression'>Regular
 expressions</a>" ("regex" or "regexp" for short) in LtdTemplate are
-specially enhanced, "magic strings". They behave like regular strings
-unless used in a method call that is able to use them as a regular
-expression.</p>
+generated from <a href='#string_values'>string values</a> using the
+<code>regexp</code> method.</p>
 
 <p>Regular expressions must be enabled by the calling program. See
 the gem documentation for details.</p>
@@ -919,8 +947,17 @@ the gem documentation for details.</p>
 <tr><td><code>ci, ignorecase</code></td>
     <td>Make pattern case-insensitive</td></tr>
 
+<tr><td><code>class</code></td>
+     <td>Returns the string "Regexp"</td></tr>
+
 <tr><td><code>ext, extended</code></td>
      <td>Allow white space and comments in the pattern</td></tr>
+
+<tr><td><code>match(</code><i>string</i><code>,
+  </code><i>offset</i><code>)</code></td>
+    <td>Match a <a href='#string_values'>string</a> against a regular
+    expression. Returns MatchData if the pattern matches, or nil if it
+    doesn't.</td></tr>
 
 <tr><td><code>multi, multiline</code></td>
     <td>Makes <code>.</code> match newlines too</td></tr>
@@ -932,6 +969,48 @@ the gem documentation for details.</p>
 <blockquote><code>"Example".replace("[aeiou]".regexp.ci,'_)
 /* => _x_mpl_ */</code></blockquote>
 
+<p><a href='#codeblock_syntax'>Code blocks</a> may be bound as methods for
+all regular expression values as follows:</p>
+
+<blockquote><code>@Regexp.methods('</code><i>method_name</i><code>, {</code>
+<i>code sequence</i> <code>})</code></blockquote>
+
+<p>Regular expression match-result methods:</p>
+
+<table>
+
+<tr><th>Method</th><th>Description</th></tr>
+
+<tr><td><code>[</code><i>index</i><code>]</code></td>
+    <td>Returns the entire (index 0) or specific sub-pattern match.</td></tr>
+
+<tr><td><code>[</code><i>name</i><code>]</code></td>
+    <td>Returns the named sub-pattern match.</td></tr>
+
+<tr><td><code>begin(</code><i>n</i><code>)</code></td>
+    <td>Returns the offset of the start of the <i>nth</i> match array
+    in the string (numeric index or named sub-match).</td></tr>
+
+<tr><td><code>class</code></td>
+    <td>Returns the string "Match".</td></tr>
+
+<tr><td><code>end(</code><i>n</i><code>)</code></td>
+    <td>Returns the offset of the character immediately following the
+    <i>nth</i> match in the string (numeric index or named
+    sub-match).</td></tr>
+
+<tr><td><code>length</code>, <code>size</code></td>
+    <td>Returns the size of the match results array.</td></tr>
+
+<tr><td><code>offset(</code><i>n</i><code>)</code></td>
+    <td>Returns the <code>begin</code> and <code>end</code> values in a
+    two-element array.</td></tr>
+
+<tr><td><code>type</code></td>
+    <td>Returns the string "match".</td></tr>
+
+</table>
+
 <p>[<a href='#contents'>Contents</a>] [<a href='#values_methods'>Values And Methods</a>]</p>
 
 <h2 id='examples'>(Some More) Examples</h2>
@@ -939,7 +1018,7 @@ the gem documentation for details.</p>
 <p>This example binds a list method to arrays to include commas and "and"
 between elements:</p>
 
-<blockquote><code>@Array?=(') @Array['list]=({<br>
+<blockquote><code>@Array.methods('list, {<br>
 $.target.join(" and ", ", ", ", ", ", and ") })<br>
 $.*('Ruby).list /* => Ruby */<br>
 $.*('Perl, 'Ruby).list /* => Perl and Ruby */<br>
@@ -950,7 +1029,7 @@ $.*('Perl, 'PHP, 'Python, 'Ruby).list /* => Perl, PHP, Python, and Ruby */
 the English "nth" for the number (e.g. 1st for 1, 2nd for 2, 3rd for 3,
 etc.) and then generates them from -11 to 24:</p>
 
-<blockquote><code>@Number?=(') @Number['en_nth]=({<br>
+<blockquote><code>@Number.methods('en_nth, {<br>
 $.var(.. 'n, $.target) $.var(.. 'n10, n.abs%(10), 'n100, n.abs%(100))<br>
 n $.if({ n100&gt;=(11)&(n100&lt;=(20)) }, 'th, { n10==(1) }, 'st,<br>
 { n10==(2) }, 'nd, { n10==(3) }, 'rd, 'th) })<br>
