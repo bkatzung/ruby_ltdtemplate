@@ -1,3 +1,7 @@
+2014-05-20 Version 1.0.1
+
+	HTML fix in TEMPLATE_MANUAL.html.
+
 2014-05-07 Version 1.0.0
 
 	Major rewrite to work with native types proxied into a template
